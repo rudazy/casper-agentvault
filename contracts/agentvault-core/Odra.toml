@@ -1,0 +1,5 @@
+[[contracts]]
+fqn = "escrow::Escrow"
+
+[[contracts]]
+fqn = "attestation::Attestation"
