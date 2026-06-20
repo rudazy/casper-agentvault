@@ -1,10 +1,13 @@
 "use client";
 
+import { GuardianTab } from "@/components/dashboard/GuardianTab";
+import { MarketplaceTab } from "@/components/dashboard/MarketplaceTab";
+import { RwaTab } from "@/components/dashboard/RwaTab";
+import type { TabId } from "@/components/dashboard/types";
+import { useCasperWallet } from "@/components/providers/CasperClickProvider";
+import { useContractActions } from "@/hooks/useContractActions";
 import { AnimatePresence, motion } from "framer-motion";
-import { FormEvent, useState } from "react";
-
-type TabId = "guardian" | "rwa" | "marketplace";
-type LoginMethod = "casper" | "email" | null;
+import { useMemo, useState } from "react";
 
 const TABS: { id: TabId; label: string; shortLabel: string; accent: string }[] = [
   { id: "guardian", label: "Portfolio Guardian", shortLabel: "Guardian", accent: "#c8f135" },
@@ -12,101 +15,59 @@ const TABS: { id: TabId; label: string; shortLabel: string; accent: string }[] =
   { id: "marketplace", label: "Agent Marketplace", shortLabel: "Market", accent: "#ff8a3d" },
 ];
 
-const MODULE_CONTENT: Record<
-  TabId,
-  {
-    title: string;
-    subtitle: string;
-    cards: { title: string; body: string }[];
-    stats: { label: string; value: string }[];
-  }
-> = {
-  guardian: {
-    title: "Portfolio Guardian",
-    subtitle: "Autonomous yield farming and risk protection agent",
-    cards: [
-      { title: "Portfolio Overview", body: "6 positions tracked across Casper DeFi pools. Mock APY 8.4%." },
-      { title: "Agent Status", body: "Sentinel active. Last rebalance simulation passed all guardrails." },
-    ],
-    stats: [
-      { label: "Net APY", value: "8.4%" },
-      { label: "Risk", value: "Low" },
-      { label: "Alerts", value: "0" },
-    ],
-  },
-  rwa: {
-    title: "RWA Compliance Oracle",
-    subtitle: "Trustless attestations for real-world assets",
-    cards: [
-      { title: "Submit Asset Data", body: "Upload hashes and metadata for compliance review and on-chain attestation." },
-      { title: "Verification Queue", body: "3 assets awaiting oracle review. Demo pipeline ready for contract wiring." },
-    ],
-    stats: [
-      { label: "Attestations", value: "128" },
-      { label: "Trust Score", value: "94" },
-      { label: "Pending", value: "3" },
-    ],
-  },
-  marketplace: {
-    title: "Agent Marketplace",
-    subtitle: "Hire verified AI agents with escrow and reputation",
-    cards: [
-      { title: "Browse Agents", body: "57 agents listed. Filter by skill, escrow tier, and on-chain reputation." },
-      { title: "Open Escrows", body: "12.4k CSPR locked across 24 active jobs. x402 payments mocked for demo." },
-    ],
-    stats: [
-      { label: "Jobs", value: "24" },
-      { label: "Agents", value: "57" },
-      { label: "Escrowed", value: "12.4k" },
-    ],
-  },
-};
+function shortenKey(key: string): string {
+  if (key.length <= 16) return key;
+  return `${key.slice(0, 8)}...${key.slice(-6)}`;
+}
 
 export function AgentVaultDashboard() {
   const [activeTab, setActiveTab] = useState<TabId>("guardian");
-  const [connected, setConnected] = useState(false);
-  const [address, setAddress] = useState("");
-  const [loginMethod, setLoginMethod] = useState<LoginMethod>(null);
-  const [connecting, setConnecting] = useState(false);
-  const [emailOpen, setEmailOpen] = useState(false);
-  const [emailInput, setEmailInput] = useState("");
-  const [statusMessage, setStatusMessage] = useState("");
+  const {
+    publicKey,
+    provider,
+    isReady,
+    isConnecting,
+    loginMethod,
+    connectCasperWallet,
+    connectEmailWallet,
+    disconnectWallet,
+    switchAccount,
+  } = useCasperWallet();
 
+  const {
+    runAction,
+    feedback,
+    busyAction,
+    clearFeedback,
+    lastBalance,
+    recentActivity,
+  } = useContractActions();
+
+  const connected = Boolean(publicKey);
   const activeTabMeta = TABS.find((t) => t.id === activeTab) ?? TABS[0];
-  const module = MODULE_CONTENT[activeTab];
 
-  const connectCasper = async () => {
-    setConnecting(true);
-    setStatusMessage("");
-    await new Promise((r) => setTimeout(r, 700));
-    setLoginMethod("casper");
-    setConnected(true);
-    setAddress("casper1q8mock7wallet9demo4hackathon");
-    setConnecting(false);
-    setStatusMessage("Casper wallet connected (demo session).");
-  };
+  const statusMessage = useMemo(() => {
+    if (!isReady) return "Loading CSPR.click wallet runtime...";
+    if (isConnecting) return "Complete sign-in in the CSPR.click modal.";
+    if (connected && loginMethod === "email") {
+      return "Connected via CSPR.click social or email wallet.";
+    }
+    if (connected) {
+      return `Connected via ${provider ?? "Casper wallet"}.`;
+    }
+    return "";
+  }, [connected, isConnecting, isReady, loginMethod, provider]);
 
-  const submitEmailLogin = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!emailInput.includes("@")) return;
-
-    setConnecting(true);
-    await new Promise((r) => setTimeout(r, 900));
-    const domain = emailInput.split("@")[1] ?? "vault.demo";
-    setLoginMethod("email");
-    setConnected(true);
-    setAddress(`email-wallet@${domain}`);
-    setEmailOpen(false);
-    setEmailInput("");
-    setConnecting(false);
-    setStatusMessage("Email wallet provisioned (demo — Web3Auth-style flow coming soon).");
-  };
-
-  const disconnect = () => {
-    setConnected(false);
-    setAddress("");
-    setLoginMethod(null);
-    setStatusMessage("");
+  const tabProps = {
+    accent: activeTabMeta.accent,
+    connected,
+    publicKey,
+    runAction,
+    feedback,
+    busyAction,
+    clearFeedback,
+    lastBalance,
+    recentActivity,
   };
 
   return (
@@ -130,16 +91,19 @@ export function AgentVaultDashboard() {
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             {connected ? (
               <div className="flex items-center gap-2">
-                <div className="hidden items-center gap-2 rounded border border-white/10 bg-white/5 px-3 py-2 sm:flex">
-                  <span className="h-2 w-2 animate-pulse rounded-full bg-[#c8f135]" />
-                  <span className="max-w-[140px] truncate font-mono text-xs">{address}</span>
-                  <span className="font-mono text-[10px] uppercase text-[#666]">
-                    {loginMethod === "email" ? "email" : "casper"}
-                  </span>
-                </div>
                 <button
                   type="button"
-                  onClick={disconnect}
+                  onClick={switchAccount}
+                  className="hidden items-center gap-2 rounded border border-white/10 bg-white/5 px-3 py-2 sm:flex"
+                >
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-[#c8f135]" />
+                  <span className="max-w-[180px] truncate font-mono text-xs">
+                    {shortenKey(publicKey ?? "")}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={disconnectWallet}
                   className="rounded border border-white/15 px-3 py-2 font-mono text-[10px] uppercase tracking-wider text-[#aaa] transition hover:border-white/30 hover:text-white sm:px-4"
                 >
                   Disconnect
@@ -149,16 +113,16 @@ export function AgentVaultDashboard() {
               <>
                 <button
                   type="button"
-                  onClick={connectCasper}
-                  disabled={connecting}
+                  onClick={connectCasperWallet}
+                  disabled={!isReady || isConnecting}
                   className="rounded bg-[#f5f5f5] px-3 py-2.5 font-sans text-xs font-medium text-[#0a0a0a] transition hover:bg-white disabled:opacity-60 sm:px-5 sm:text-sm"
                 >
-                  {connecting ? "..." : "Casper"}
+                  {isConnecting ? "..." : "Casper"}
                 </button>
                 <button
                   type="button"
-                  onClick={() => setEmailOpen(true)}
-                  disabled={connecting}
+                  onClick={connectEmailWallet}
+                  disabled={!isReady || isConnecting}
                   className="rounded border border-white/25 px-3 py-2.5 font-sans text-xs font-medium transition hover:bg-white/5 disabled:opacity-60 sm:px-5 sm:text-sm"
                 >
                   Email
@@ -230,115 +194,25 @@ export function AgentVaultDashboard() {
               }}
             />
 
-            <div className="space-y-6 sm:space-y-8">
-              <div>
-                <h2 className="font-sans text-2xl font-semibold tracking-wide sm:text-4xl">
-                  {module.title}
-                </h2>
-                <p className="mt-2 font-mono text-sm text-[#888] sm:text-lg">{module.subtitle}</p>
-              </div>
+            {activeTab === "guardian" && <GuardianTab {...tabProps} />}
+            {activeTab === "rwa" && <RwaTab {...tabProps} />}
+            {activeTab === "marketplace" && <MarketplaceTab {...tabProps} />}
 
-              <div className="grid grid-cols-3 gap-2 sm:gap-4">
-                {module.stats.map((stat) => (
-                  <div
-                    key={stat.label}
-                    className="rounded border border-white/10 bg-black/40 p-3 text-center sm:p-4"
-                  >
-                    <p className="font-mono text-[9px] uppercase tracking-wider text-[#666] sm:text-[10px]">
-                      {stat.label}
-                    </p>
-                    <p
-                      className="mt-1 font-sans text-lg font-semibold sm:text-2xl"
-                      style={{ color: activeTabMeta.accent }}
-                    >
-                      {stat.value}
-                    </p>
-                  </div>
-                ))}
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2 md:gap-6">
-                {module.cards.map((card) => (
-                  <div
-                    key={card.title}
-                    className="rounded border border-white/10 bg-black/45 p-5 backdrop-blur-md sm:p-8"
-                  >
-                    <h3 className="font-sans text-lg font-medium tracking-wide sm:text-xl">
-                      {card.title}
-                    </h3>
-                    <p className="mt-3 font-mono text-xs leading-relaxed text-[#888] sm:text-sm">
-                      {card.body}
-                    </p>
-                  </div>
-                ))}
-              </div>
-
-              {connected && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="flex items-center gap-2 rounded border border-[#c8f135]/20 bg-[#c8f135]/5 px-4 py-3 sm:hidden"
-                >
-                  <span className="h-2 w-2 animate-pulse rounded-full bg-[#c8f135]" />
-                  <span className="truncate font-mono text-xs">{address}</span>
-                </motion.div>
-              )}
-            </div>
+            {connected && publicKey && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="mt-6 rounded border border-[#c8f135]/20 bg-[#c8f135]/5 px-4 py-3 sm:hidden"
+              >
+                <p className="font-mono text-[10px] uppercase tracking-wider text-[#666]">
+                  Active account
+                </p>
+                <p className="mt-1 truncate font-mono text-xs">{shortenKey(publicKey)}</p>
+              </motion.div>
+            )}
           </motion.section>
         </AnimatePresence>
       </main>
-
-      <AnimatePresence>
-        {emailOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 sm:items-center"
-            onClick={() => setEmailOpen(false)}
-          >
-            <motion.div
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 24 }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md rounded border border-white/15 bg-[#111]/95 p-6 backdrop-blur-xl"
-            >
-              <h3 className="font-sans text-xl font-semibold tracking-wide">Email Wallet</h3>
-              <p className="mt-2 font-mono text-xs leading-relaxed text-[#888]">
-                Demo flow for passwordless login. Real Web3Auth or Casper email auth will replace
-                this.
-              </p>
-              <form onSubmit={submitEmailLogin} className="mt-6 space-y-4">
-                <input
-                  type="email"
-                  required
-                  value={emailInput}
-                  onChange={(e) => setEmailInput(e.target.value)}
-                  placeholder="you@domain.com"
-                  className="w-full rounded border border-white/15 bg-black/50 px-4 py-3 font-mono text-sm outline-none transition focus:border-[#f5c842]/60"
-                />
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setEmailOpen(false)}
-                    className="flex-1 rounded border border-white/15 py-3 font-mono text-xs uppercase tracking-wider text-[#aaa]"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={connecting}
-                    className="flex-1 rounded bg-[#f5c842] py-3 font-sans text-sm font-medium text-[#0a0a0a] disabled:opacity-60"
-                  >
-                    {connecting ? "Sending..." : "Send Magic Link"}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
