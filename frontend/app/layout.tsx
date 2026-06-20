@@ -16,6 +16,18 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Casper AgentVault",
   description: "Agentic Smart Wallet for DeFi and RWA on Casper Network",
+  openGraph: {
+    title: "Casper AgentVault",
+    description: "Agentic Smart Wallet for DeFi and RWA on Casper Network",
+    type: "website",
+    images: [{ url: "/og-image.jpg", width: 1200, height: 630, alt: "Casper AgentVault" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Casper AgentVault",
+    description: "Agentic Smart Wallet for DeFi and RWA on Casper Network",
+    images: ["/og-image.jpg"],
+  },
 };
 
 export default function RootLayout({

@@ -1,10 +1,15 @@
 node_modules/
 target/
+.next/
+out/
 agents/dist/
 frontend/lib/agents/runtime/dist/
+*.tsbuildinfo
+
 .env
 .env.local
 .DS_Store
+
 tasks/
 mcps/
 terminals/
