@@ -3,12 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "npm run build --prefix ../agents && node scripts/sync-agents.mjs",
+    "prebuild": "npm run build --prefix ../agents && node scripts/sync-agents.mjs",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
+    "@langchain/core": "1.1.38",
+    "@langchain/openai": "1.2.10",
+    "langchain": "1.2.30",
     "@make-software/csprclick-core-types": "^2.1.0",
     "casper-js-sdk": "^5.0.12",
     "framer-motion": "^12.40.0",

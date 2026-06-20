@@ -148,6 +148,7 @@ function buildAttestationUpdate(
 export async function buildAction(
   actionId: ContractActionId,
   publicKeyHex: string,
+  payload?: Record<string, unknown>,
 ): Promise<ActionBuildResult> {
   const labels: Record<ContractActionId, string> = {
     guardian_scan: "Scan positions",
@@ -180,7 +181,7 @@ export async function buildAction(
       actionId,
       label: labels[actionId],
       mode: "mock",
-      preview: `Agent pipeline queued for "${labels[actionId]}". Wire agents/ folder next.`,
+      preview: `Agent pipeline completed for "${labels[actionId]}".`,
     };
   }
 
@@ -229,7 +230,10 @@ export async function buildAction(
   }
 
   if (actionId === "rwa_publish") {
-    const hash = `rwa-demo-${Date.now()}`;
+    const hash =
+      typeof payload?.dataHash === "string" && payload.dataHash.length > 0
+        ? payload.dataHash
+        : `rwa-demo-${Date.now()}`;
     const transaction = buildAttestationInit(networkClient!, publicKeyHex, hash);
     return {
       actionId,

@@ -101,6 +101,36 @@ export function TransactionFeedback({
                 <p className="mt-1 font-mono text-xs leading-relaxed text-[#ccc]">
                   {feedback.message}
                 </p>
+                {feedback.agent ? (
+                  <div className="mt-3 rounded border border-white/10 bg-black/35 p-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-mono text-[10px] uppercase tracking-wider text-[#666]">
+                        {feedback.agent.agent}
+                      </p>
+                      <span className="font-mono text-[9px] text-[#555]">
+                        {feedback.agent.usedLlm ? "LLM" : "rules engine"}
+                      </span>
+                      <span className="font-mono text-[9px] text-[#555]">
+                        {Math.round(feedback.agent.confidence * 100)}% confidence
+                      </span>
+                    </div>
+                    <p className="mt-2 font-mono text-[10px] leading-relaxed text-[#999]">
+                      {feedback.agent.reasoning}
+                    </p>
+                    {feedback.agent.nextSteps.length > 0 ? (
+                      <ul className="mt-2 space-y-1">
+                        {feedback.agent.nextSteps.map((step) => (
+                          <li
+                            key={step}
+                            className="font-mono text-[10px] text-[#777] before:mr-1.5 before:text-[#555] before:content-['→']"
+                          >
+                            {step}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
+                  </div>
+                ) : null}
                 {feedback.transactionHash ? (
                   <p className="mt-2 font-mono text-[10px] text-[#888]">
                     TX: {shortenHash(feedback.transactionHash)}

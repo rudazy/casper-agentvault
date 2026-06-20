@@ -1,6 +1,9 @@
 node_modules/
 target/
+agents/dist/
+frontend/lib/agents/runtime/dist/
 .env
+.env.local
 .DS_Store
 tasks/
 mcps/

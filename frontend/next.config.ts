@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  serverExternalPackages: ["langchain", "@langchain/openai", "@langchain/core"],
 };
 
 export default nextConfig;

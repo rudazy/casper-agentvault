@@ -16,7 +16,7 @@ export const clickUIOptions: ClickUIOptions = {
 
 export const clickSDKOptions: CsprClickInitOptions = {
   appName: "Casper AgentVault",
-  appId: "csprclick-template",
+  appId: process.env.NEXT_PUBLIC_CSPR_CLICK_APP_ID ?? "csprclick-template",
   providers: ["casper-wallet", "ledger", "metamask-snap", "casperdash"],
   contentMode: "iframe",
 };

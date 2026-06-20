@@ -65,7 +65,7 @@ export function RwaTab({
       return;
     }
     setFormError("");
-    await runAction(actionId);
+    await runAction(actionId, { assetId, dataHash, jurisdiction });
   };
 
   const anyBusy = busyAction !== null;

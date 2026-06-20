@@ -24,7 +24,10 @@ export interface TabPanelProps {
   accent: string;
   connected: boolean;
   publicKey?: string;
-  runAction: (actionId: ContractActionId) => Promise<void>;
+  runAction: (
+    actionId: ContractActionId,
+    payload?: Record<string, unknown>,
+  ) => Promise<void>;
   feedback: TxFeedback;
   busyAction: ContractActionId | null;
   clearFeedback: () => void;

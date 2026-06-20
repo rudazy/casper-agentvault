@@ -70,7 +70,11 @@ export function MarketplaceTab({
       return;
     }
     setFormError("");
-    await runAction("market_post_job");
+    await runAction("market_post_job", {
+      jobTitle,
+      jobDescription,
+      escrowAmount,
+    });
   };
 
   return (
