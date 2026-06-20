@@ -4,3 +4,4 @@ target/
 .DS_Store
 tasks/
 mcps/
+terminals/
