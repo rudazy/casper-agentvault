@@ -31,3 +31,13 @@ body {
   background: color-mix(in srgb, var(--accent-lime) 35%, transparent);
   color: #fff;
 }
+
+/* Mobile: hide horizontal scrollbar on tab strip */
+.overflow-x-auto {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.overflow-x-auto::-webkit-scrollbar {
+  display: none;
+}
