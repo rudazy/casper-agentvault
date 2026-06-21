@@ -7,5 +7,10 @@ export function getCasperRpcUrl(): string {
 }
 
 export function createRpcClient(): RpcClient {
-  return new RpcClient(new HttpHandler(getCasperRpcUrl()));
+  const handler = new HttpHandler(getCasperRpcUrl());
+  const authToken = process.env.NEXT_PUBLIC_CSPR_CLOUD_AUTH_TOKEN;
+  if (authToken) {
+    handler.setCustomHeaders({ Authorization: authToken });
+  }
+  return new RpcClient(handler);
 }

@@ -7,7 +7,8 @@ export const ESCROW_PACKAGE_HASH =
 export const ATTESTATION_PACKAGE_HASH =
   process.env.NEXT_PUBLIC_ATTESTATION_PACKAGE_HASH ?? "";
 
-export const DEFAULT_DEPLOY_COST = 100_000_000;
+/** Minimum payment (motes) accepted by casper-test for contract package calls. */
+export const DEFAULT_DEPLOY_COST = 5_000_000_000;
 export const DEFAULT_TTL_MS = 1_800_000;
 
 export function normalizePackageHash(hash: string): string {

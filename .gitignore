@@ -13,3 +13,9 @@ frontend/lib/agents/runtime/dist/
 tasks/
 mcps/
 terminals/
+agent-tools/
+
+# Local keys and env (never commit)
+*.pem
+**/.env
+!**/.env.example

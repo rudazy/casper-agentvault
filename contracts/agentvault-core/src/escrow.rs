@@ -20,7 +20,7 @@ impl Escrow {
 
     pub fn verify_and_release(&mut self) {
         // TODO: add verification logic (multi-agent or oracle call)
-        if self.env().caller() == self.owner.get_or_default() {
+        if self.env().caller() == self.owner.get_or_revert_with(ExecutionError::MissingAddress) {
             self.verified.set(true);
             // transfer logic here later
         }

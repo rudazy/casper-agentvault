@@ -7,6 +7,7 @@ import type { TabId } from "@/components/dashboard/types";
 import { useCasperWallet } from "@/components/providers/CasperClickProvider";
 import { useContractActions } from "@/hooks/useContractActions";
 import { AnimatePresence, motion } from "framer-motion";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
 const TABS: { id: TabId; label: string; shortLabel: string; accent: string }[] = [
@@ -89,6 +90,12 @@ export function AgentVaultDashboard() {
           </div>
 
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+            <Link
+              href="/docs"
+              className="rounded border border-white/15 px-2.5 py-2 font-mono text-[10px] uppercase tracking-wider text-[#aaa] transition hover:border-[#c8f135]/40 hover:text-[#c8f135] sm:px-3"
+            >
+              Docs
+            </Link>
             {connected ? (
               <div className="flex items-center gap-2">
                 <button
