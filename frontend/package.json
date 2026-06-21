@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "predev": "npm run build --prefix ../agents && node scripts/sync-agents.mjs",
+    "predev": "npm install --prefix ../agents && npm run build --prefix ../agents && node scripts/sync-agents.mjs",
+    "prebuild": "npm install --prefix ../agents && npm run build --prefix ../agents && node scripts/sync-agents.mjs",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -13,30 +14,21 @@
     "@langchain/core": "1.1.38",
     "@langchain/openai": "1.2.10",
     "@make-software/csprclick-core-types": "^2.1.0",
-    "@make-software/csprclick-ui": "^2.1.0",
     "casper-js-sdk": "^5.0.12",
     "framer-motion": "^12.40.0",
     "langchain": "1.2.30",
     "next": "16.2.9",
-    "react": "18.3.1",
-    "react-country-flag": "^3.1.0",
-    "react-dom": "18.3.1",
-    "react-modal": "^3.16.3",
-    "styled-components": "^5.3.11"
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
-    "@types/styled-components": "^5.1.34",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
     "tailwindcss": "^4",
     "typescript": "^5"
-  },
-  "overrides": {
-    "react": "18.3.1",
-    "react-dom": "18.3.1"
   }
 }

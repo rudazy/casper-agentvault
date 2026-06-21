@@ -17,6 +17,14 @@ impl Attestation {
         self.reputation_score.set(initial_score);
     }
 
+    /// Callable entry point for publishing attestations (init is deploy-only in Odra).
+    pub fn publish(&mut self, data_hash: String, initial_score: u32) {
+        self.issuer.set(self.env().caller());
+        self.data_hash.set(data_hash);
+        self.timestamp.set(self.env().get_block_time());
+        self.reputation_score.set(initial_score);
+    }
+
     pub fn update_reputation(&mut self, new_score: u32) {
         // TODO: only owner or verifier can update
         self.reputation_score.set(new_score);

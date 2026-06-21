@@ -1,7 +1,6 @@
 "use client";
 
-import type { AccountType } from "@make-software/csprclick-core-types";
-import { useClickRef } from "@make-software/csprclick-ui";
+import type { AccountType, ICSPRClickSDK } from "@make-software/csprclick-core-types";
 import {
   createContext,
   useCallback,
@@ -17,7 +16,7 @@ const CASPER_WALLET_PROVIDER = "casper-wallet";
 interface CasperWalletContextValue {
   publicKey: string | undefined;
   provider: string | undefined;
-  clickRef: ReturnType<typeof useClickRef>;
+  clickRef: ICSPRClickSDK | undefined;
   isReady: boolean;
   isConnecting: boolean;
   connectError: string | undefined;
@@ -35,9 +34,7 @@ function extractAccount(event: unknown): AccountType | undefined {
   return candidate?.public_key ? candidate : undefined;
 }
 
-async function readActiveAccount(
-  ref: NonNullable<ReturnType<typeof useClickRef>>,
-): Promise<AccountType | undefined> {
+async function readActiveAccount(ref: ICSPRClickSDK): Promise<AccountType | undefined> {
   try {
     const account = await ref.getActiveAccountAsync({ withBalance: true });
     return account?.public_key ? account : undefined;
@@ -47,63 +44,82 @@ async function readActiveAccount(
 }
 
 export function CasperClickProvider({ children }: { children: ReactNode }) {
-  const clickRef = useClickRef();
   const [connectedAccount, setConnectedAccount] = useState<AccountType | undefined>(undefined);
+  const [clickRef, setClickRef] = useState<ICSPRClickSDK | undefined>(undefined);
   const [isReady, setIsReady] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectError, setConnectError] = useState<string | undefined>(undefined);
 
-  const refreshActiveAccount = useCallback(async () => {
-    if (!clickRef) return;
-    const account = await readActiveAccount(clickRef);
+  const refreshActiveAccount = useCallback(async (ref: ICSPRClickSDK) => {
+    const account = await readActiveAccount(ref);
     setConnectedAccount(account);
-  }, [clickRef]);
+  }, []);
 
   useEffect(() => {
-    if (!clickRef) return;
+    let cancelled = false;
+    let bound = false;
+    let pollTimer: ReturnType<typeof setInterval> | undefined;
 
-    let ready = false;
-    const markReady = () => {
-      if (ready) return;
-      ready = true;
-      setIsReady(true);
-      void refreshActiveAccount();
+    const bindSdk = (ref: ICSPRClickSDK) => {
+      if (cancelled || bound) return;
+      bound = true;
+      setClickRef(ref);
+
+      let ready = false;
+      const markReady = () => {
+        if (cancelled || ready) return;
+        ready = true;
+        setIsReady(true);
+        void refreshActiveAccount(ref);
+      };
+
+      if (typeof ref.once === "function") {
+        ref.once("csprclick:loaded", markReady);
+      } else {
+        ref.on("csprclick:loaded", markReady);
+      }
+
+      window.setTimeout(markReady, 1000);
+
+      const onSignedIn = (event: unknown) => {
+        const account = extractAccount(event);
+        setConnectedAccount(account);
+        setIsConnecting(false);
+        setConnectError(undefined);
+        if (!account) {
+          void refreshActiveAccount(ref);
+        }
+      };
+
+      const onSignedOut = () => {
+        setConnectedAccount(undefined);
+        setIsConnecting(false);
+      };
+
+      ref.on("csprclick:signed_in", onSignedIn);
+      ref.on("csprclick:switched_account", onSignedIn);
+      ref.on("csprclick:signed_out", onSignedOut);
+      ref.on("csprclick:disconnected", onSignedOut);
+
+      void refreshActiveAccount(ref);
     };
 
-    if (typeof clickRef.once === "function") {
-      clickRef.once("csprclick:loaded", markReady);
+    if (window.csprclick) {
+      bindSdk(window.csprclick);
     } else {
-      clickRef.on("csprclick:loaded", markReady);
+      pollTimer = setInterval(() => {
+        if (window.csprclick) {
+          bindSdk(window.csprclick);
+          if (pollTimer) clearInterval(pollTimer);
+        }
+      }, 200);
     }
 
-    const readyTimer = window.setTimeout(markReady, 1000);
-
-    const onSignedIn = (event: unknown) => {
-      const account = extractAccount(event);
-      setConnectedAccount(account);
-      setIsConnecting(false);
-      setConnectError(undefined);
-      if (!account) {
-        void refreshActiveAccount();
-      }
-    };
-
-    const onSignedOut = () => {
-      setConnectedAccount(undefined);
-      setIsConnecting(false);
-    };
-
-    clickRef.on("csprclick:signed_in", onSignedIn);
-    clickRef.on("csprclick:switched_account", onSignedIn);
-    clickRef.on("csprclick:signed_out", onSignedOut);
-    clickRef.on("csprclick:disconnected", onSignedOut);
-
-    void refreshActiveAccount();
-
     return () => {
-      window.clearTimeout(readyTimer);
+      cancelled = true;
+      if (pollTimer) clearInterval(pollTimer);
     };
-  }, [clickRef, refreshActiveAccount]);
+  }, [refreshActiveAccount]);
 
   const connectWallet = useCallback(async () => {
     if (!clickRef) {
@@ -115,9 +131,7 @@ export function CasperClickProvider({ children }: { children: ReactNode }) {
     setConnectError(undefined);
 
     try {
-      const hasExtension = clickRef.isProviderPresent(CASPER_WALLET_PROVIDER);
-
-      if (hasExtension) {
+      if (clickRef.isProviderPresent(CASPER_WALLET_PROVIDER)) {
         const account = await clickRef.connect(CASPER_WALLET_PROVIDER, {});
         if (account?.public_key) {
           setConnectedAccount(account);
@@ -152,7 +166,7 @@ export function CasperClickProvider({ children }: { children: ReactNode }) {
       publicKey: connectedAccount?.public_key,
       provider: connectedAccount?.provider,
       clickRef,
-      isReady: Boolean(clickRef) && isReady,
+      isReady,
       isConnecting,
       connectError,
       connectWallet,

@@ -1,7 +1,16 @@
 import { AppProviders } from "@/components/providers/AppProviders";
+import {
+  clickSDKOptions,
+  clickUIOptions,
+  CSPR_CLICK_SCRIPT_ID,
+  CSPR_CLICK_SCRIPT_SRC,
+} from "@/lib/casper/click-config";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
+
+const inlineClickConfig = `window.clickUIOptions=${JSON.stringify(clickUIOptions)};window.clickSDKOptions=${JSON.stringify(clickSDKOptions)};`;
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -41,6 +50,15 @@ export default function RootLayout({
         id="agentvault-root"
         className="min-h-full bg-[#0a0a0a] font-mono text-[#f5f5f5] antialiased"
       >
+        <Script id="csprclick-config" strategy="beforeInteractive">
+          {inlineClickConfig}
+        </Script>
+        <Script
+          id={CSPR_CLICK_SCRIPT_ID}
+          src={CSPR_CLICK_SCRIPT_SRC}
+          strategy="afterInteractive"
+        />
+        <div id="csprclick-ui" />
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

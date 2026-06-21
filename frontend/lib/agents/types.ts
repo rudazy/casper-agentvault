@@ -1,4 +1,4 @@
-import type { ContractActionId } from "@/lib/casper/contract-actions";
+import type { ContractActionId } from "@/lib/casper/contract-action-types";
 
 export interface AgentInsight {
   agent: string;

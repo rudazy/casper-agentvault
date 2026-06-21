@@ -30,10 +30,10 @@ function fallbackFor(actionId: AgentRequest["actionId"]): AgentRecommendation {
         "Job scope fits verified agent tier. 2.5 CSPR escrow covers estimated 2-hour engagement.",
       confidence: 0.9,
       nextSteps: [
-        "Call Escrow.init(recipient, amount).",
+        "Call Escrow.post_job(recipient, amount).",
         "Notify selected agent via marketplace index.",
       ],
-      preview: "Escrow.init(recipient=self, amount=2.5 CSPR)",
+      preview: "Escrow.post_job(recipient=self, amount=2.5 CSPR)",
     },
     market_release: {
       contractAction: "market_release",

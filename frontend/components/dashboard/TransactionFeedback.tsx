@@ -64,6 +64,12 @@ export function TransactionFeedback({
               </button>
             </div>
 
+            {feedback.status === "error" && (
+              <p className="mb-3 font-mono text-[10px] uppercase tracking-wider text-[#e23636]">
+                Failed
+              </p>
+            )}
+
             {(feedback.status === "building" ||
               feedback.status === "signing" ||
               feedback.status === "success") && (

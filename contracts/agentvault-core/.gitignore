@@ -7,4 +7,5 @@ Cargo.lock
 /wasm
 .env
 secret_key.pem
-/scripts
+_wallet-keys/
+tools/

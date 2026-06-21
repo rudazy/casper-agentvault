@@ -41,3 +41,14 @@ body {
 .overflow-x-auto::-webkit-scrollbar {
   display: none;
 }
+
+#csprclick-ui {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+#csprclick-ui > * {
+  pointer-events: auto;
+}

@@ -1,7 +1,7 @@
 "use client";
 
 import type { TabAction } from "@/components/dashboard/types";
-import type { ContractActionId } from "@/lib/casper/contract-actions";
+import type { ContractActionId } from "@/lib/casper/contract-action-types";
 import type { TxFeedback } from "@/hooks/useContractActions";
 import { TransactionFeedback } from "@/components/dashboard/TransactionFeedback";
 

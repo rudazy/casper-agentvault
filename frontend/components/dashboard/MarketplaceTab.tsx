@@ -1,6 +1,7 @@
 "use client";
 
 import { ModuleActionBar } from "@/components/dashboard/ModuleActionBar";
+import { TransactionFeedback } from "@/components/dashboard/TransactionFeedback";
 import {
   ActivityTimeline,
   formatActivityTime,
@@ -10,11 +11,14 @@ import {
   StatusBadge,
 } from "@/components/dashboard/shared";
 import type { TabAction, TabPanelProps } from "@/components/dashboard/types";
+import type { useContractDeploy } from "@/hooks/useContractDeploy";
 import { useMemo, useState } from "react";
+
+type ContractDeploy = ReturnType<typeof useContractDeploy>;
 
 const ACTIONS: TabAction[] = [
   { id: "market_browse", label: "Browse agents", hint: "Mock marketplace index" },
-  { id: "market_post_job", label: "Post job", hint: "Escrow.init on-chain", primary: true },
+  { id: "market_post_job", label: "Post job", hint: "Escrow.post_job on-chain", primary: true },
   { id: "market_release", label: "Release escrow", hint: "Escrow.verify_and_release" },
 ];
 
@@ -39,7 +43,8 @@ export function MarketplaceTab({
   busyAction,
   clearFeedback,
   recentActivity,
-}: TabPanelProps) {
+  deploy,
+}: TabPanelProps & { deploy?: ContractDeploy }) {
   const [jobTitle, setJobTitle] = useState("");
   const [jobDescription, setJobDescription] = useState("");
   const [escrowAmount, setEscrowAmount] = useState("2.5");
@@ -62,7 +67,11 @@ export function MarketplaceTab({
   );
 
   const visibleAgents = showAllAgents ? AGENTS : AGENTS.slice(0, 3);
-  const anyBusy = busyAction !== null;
+  const deployBusy = deploy?.busyContract != null;
+  const anyBusy = busyAction !== null || deployBusy;
+  const needsDeploy = deploy?.postJobSupported === false;
+  const canSync =
+    Boolean(deploy?.deployerHashes.escrow) && Boolean(deploy?.deployerHashes.attestation);
 
   const handlePostJob = async () => {
     if (!formReady) {
@@ -136,8 +145,51 @@ export function MarketplaceTab({
         </button>
       </PanelCard>
 
+      {needsDeploy && deploy ? (
+        <PanelCard
+          title="Upgrade on-chain contracts"
+          subtitle="The configured Escrow package is missing post_job. Deploy from your connected wallet."
+        >
+          <TransactionFeedback feedback={deploy.feedback} onDismiss={deploy.clearFeedback} />
+          <p className="mb-4 font-mono text-xs text-[#888]">
+            Step 1: Deploy Escrow. Step 2: Deploy Attestation. Step 3: Sync hashes and restart{" "}
+            <span className="text-[#f5f5f5]">npm run dev</span>.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => void deploy.runDeploy("Escrow")}
+              disabled={!connected || anyBusy}
+              className="rounded border border-white/20 px-4 py-2 font-mono text-xs uppercase tracking-wider text-[#f5f5f5] transition hover:border-white/40 disabled:opacity-50"
+            >
+              {deploy.busyContract === "Escrow" ? "Deploying Escrow..." : "Deploy Escrow"}
+            </button>
+            <button
+              type="button"
+              onClick={() => void deploy.runDeploy("Attestation")}
+              disabled={!connected || anyBusy}
+              className="rounded border border-white/20 px-4 py-2 font-mono text-xs uppercase tracking-wider text-[#f5f5f5] transition hover:border-white/40 disabled:opacity-50"
+            >
+              {deploy.busyContract === "Attestation"
+                ? "Deploying Attestation..."
+                : "Deploy Attestation"}
+            </button>
+            <button
+              type="button"
+              onClick={() => void deploy.runSync()}
+              disabled={!connected || !canSync || anyBusy}
+              className="rounded px-4 py-2 font-mono text-xs uppercase tracking-wider text-[#0a0a0a] transition disabled:opacity-50"
+              style={{ backgroundColor: accent }}
+            >
+              {deploy.busyContract === "sync" ? "Syncing..." : "Sync package hashes"}
+            </button>
+          </div>
+        </PanelCard>
+      ) : null}
+
       <div className="grid gap-4 lg:grid-cols-2 lg:gap-6">
-        <PanelCard title="Post a job" subtitle="Lock escrow via Escrow.init on deploy">
+        <PanelCard title="Post a job" subtitle="Lock escrow via Escrow.post_job on casper-test">
+          <TransactionFeedback feedback={feedback} onDismiss={clearFeedback} />
           <div className="space-y-4">
             <FormField
               label="Job title"

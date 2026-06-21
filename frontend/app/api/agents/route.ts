@@ -1,5 +1,5 @@
-import { coordinator } from "@/lib/agents/server/coordinator";
-import type { ContractActionId } from "@/lib/casper/contract-actions";
+import { dispatchAgentAction } from "@/lib/agents/server/coordinator";
+import type { ContractActionId } from "@/lib/casper/contract-action-types";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
         ? (body.payload as Record<string, unknown>)
         : undefined;
 
-    const result = await coordinator.dispatchByAction(body.actionId, {
+    const result = await dispatchAgentAction(body.actionId, {
       publicKey,
       payload,
     });

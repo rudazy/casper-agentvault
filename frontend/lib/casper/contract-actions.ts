@@ -1,11 +1,15 @@
+import "server-only";
+
 import {
   Args,
   CasperNetwork,
   CLValue,
+  Key,
   PublicKey,
   PurseIdentifier,
   type Transaction,
 } from "casper-js-sdk";
+import type { ContractActionId } from "@/lib/casper/contract-action-types";
 import {
   ATTESTATION_PACKAGE_HASH,
   CASPER_CHAIN_NAME,
@@ -18,16 +22,7 @@ import {
 } from "@/lib/casper/contract-config";
 import { createRpcClient } from "@/lib/casper/rpc";
 
-export type ContractActionId =
-  | "guardian_scan"
-  | "guardian_rebalance"
-  | "guardian_risk_log"
-  | "rwa_submit"
-  | "rwa_verify"
-  | "rwa_publish"
-  | "market_browse"
-  | "market_post_job"
-  | "market_release";
+export type { ContractActionId } from "@/lib/casper/contract-action-types";
 
 export interface ActionBuildResult {
   actionId: ContractActionId;
@@ -50,21 +45,35 @@ function senderKey(publicKeyHex: string): PublicKey {
   return PublicKey.fromHex(publicKeyHex);
 }
 
-function buildEscrowInit(network: CasperNetwork, publicKeyHex: string): Transaction {
+function csprToMotes(amount: unknown, fallback = "2.5"): string {
+  const raw = typeof amount === "string" || typeof amount === "number" ? String(amount) : fallback;
+  const cspr = Number(raw);
+  if (!Number.isFinite(cspr) || cspr <= 0) {
+    return String(Math.round(Number(fallback) * 1_000_000_000));
+  }
+  return String(Math.round(cspr * 1_000_000_000));
+}
+
+function buildEscrowPostJob(
+  network: CasperNetwork,
+  publicKeyHex: string,
+  payload?: Record<string, unknown>,
+): Transaction {
   if (!hasEscrowContract()) {
     throw new Error("Set NEXT_PUBLIC_ESCROW_PACKAGE_HASH after deploying escrow.");
   }
 
   const sender = senderKey(publicKeyHex);
+  const escrowMotes = csprToMotes(payload?.escrowAmount);
   const args = Args.fromMap({
-    recipient: CLValue.newCLPublicKey(sender),
-    amount: CLValue.newCLUInt512("2500000000"),
+    recipient: CLValue.newCLKey(Key.newKey(sender.accountHash().toPrefixedString())),
+    amount: CLValue.newCLUInt512(escrowMotes),
   });
 
   return network.createContractPackageCallTransaction(
     sender,
     normalizePackageHash(ESCROW_PACKAGE_HASH),
-    "init",
+    "post_job",
     CASPER_CHAIN_NAME,
     DEFAULT_DEPLOY_COST,
     args,
@@ -90,7 +99,7 @@ function buildEscrowRelease(network: CasperNetwork, publicKeyHex: string): Trans
   );
 }
 
-function buildAttestationInit(
+function buildAttestationPublish(
   network: CasperNetwork,
   publicKeyHex: string,
   dataHash: string,
@@ -110,7 +119,7 @@ function buildAttestationInit(
   return network.createContractPackageCallTransaction(
     sender,
     normalizePackageHash(ATTESTATION_PACKAGE_HASH),
-    "init",
+    "publish",
     CASPER_CHAIN_NAME,
     DEFAULT_DEPLOY_COST,
     args,
@@ -208,13 +217,15 @@ export async function buildAction(
   }
 
   if (actionId === "market_post_job") {
-    const transaction = buildEscrowInit(networkClient!, publicKeyHex);
+    const escrowMotes = csprToMotes(payload?.escrowAmount);
+    const escrowCspr = (Number(escrowMotes) / 1_000_000_000).toFixed(2);
+    const transaction = buildEscrowPostJob(networkClient!, publicKeyHex, payload);
     return {
       actionId,
       label: labels[actionId],
       mode: "transaction",
       transaction,
-      preview: "Escrow.init(recipient=self, amount=2.5 CSPR)",
+      preview: `Escrow.post_job(recipient=self, amount=${escrowCspr} CSPR)`,
     };
   }
 
@@ -234,13 +245,13 @@ export async function buildAction(
       typeof payload?.dataHash === "string" && payload.dataHash.length > 0
         ? payload.dataHash
         : `rwa-demo-${Date.now()}`;
-    const transaction = buildAttestationInit(networkClient!, publicKeyHex, hash);
+    const transaction = buildAttestationPublish(networkClient!, publicKeyHex, hash);
     return {
       actionId,
       label: labels[actionId],
       mode: "transaction",
       transaction,
-      preview: `Attestation.init(data_hash="${hash}", initial_score=85)`,
+      preview: `Attestation.publish(data_hash="${hash}", initial_score=85)`,
     };
   }
 

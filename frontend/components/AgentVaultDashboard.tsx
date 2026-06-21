@@ -5,7 +5,9 @@ import { MarketplaceTab } from "@/components/dashboard/MarketplaceTab";
 import { RwaTab } from "@/components/dashboard/RwaTab";
 import type { TabId } from "@/components/dashboard/types";
 import { useCasperWallet } from "@/components/providers/CasperClickProvider";
+import { TransactionFeedback } from "@/components/dashboard/TransactionFeedback";
 import { useContractActions } from "@/hooks/useContractActions";
+import { useContractDeploy } from "@/hooks/useContractDeploy";
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -42,6 +44,8 @@ export function AgentVaultDashboard() {
     lastBalance,
     recentActivity,
   } = useContractActions();
+
+  const contractDeploy = useContractDeploy();
 
   const connected = Boolean(publicKey);
   const activeTabMeta = TABS.find((t) => t.id === activeTab) ?? TABS[0];
@@ -152,6 +156,12 @@ export function AgentVaultDashboard() {
           ) : null}
         </motion.section>
 
+        {feedback.status !== "idle" ? (
+          <div className="mb-6">
+            <TransactionFeedback feedback={feedback} onDismiss={clearFeedback} />
+          </div>
+        ) : null}
+
         <div className="mb-6 -mx-4 flex gap-2 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0">
           {TABS.map((tab) => {
             const isActive = activeTab === tab.id;
@@ -192,7 +202,9 @@ export function AgentVaultDashboard() {
 
             {activeTab === "guardian" && <GuardianTab {...tabProps} />}
             {activeTab === "rwa" && <RwaTab {...tabProps} />}
-            {activeTab === "marketplace" && <MarketplaceTab {...tabProps} />}
+            {activeTab === "marketplace" && (
+              <MarketplaceTab {...tabProps} deploy={contractDeploy} />
+            )}
 
             {connected && publicKey && (
               <motion.div

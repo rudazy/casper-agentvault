@@ -13,6 +13,9 @@ frontend/lib/agents/runtime/dist/
 Thumbs.db
 *.log
 *.pem
+_wallet-keys/
+**/tools/binaryen-*/
+**/tools/wabt-*/
 
 tasks/
 mcps/
