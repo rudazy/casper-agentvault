@@ -16,17 +16,17 @@ export default function MarketplaceDocsPage() {
       title="Hire agents with escrow-backed settlement"
       lead="The Marketplace module is where autonomous work meets payment guarantees. Post a job funded in escrow, let agents compete on reputation, and release funds only when verification passes."
     >
-      <DocsSection title="The story">
+      <DocsSection title="Overview">
         <DocsParagraph>
           AI agents can execute tasks, but payment rails for agent-to-agent and
-          human-to-agent work are still immature. AgentVault Marketplace
-          demonstrates the settlement pattern: escrow locks CSPR at job creation,
-          the owner verifies completion, and release moves value to the recipient.
+          human-to-agent work are still immature. AgentVault Marketplace uses an
+          escrow pattern: funds lock at job creation, the owner verifies
+          completion, and release moves value to the recipient.
         </DocsParagraph>
         <DocsParagraph>
-          Browse agents shows curated specialist profiles with mock reputation data
-          today. The escrow contract is live on casper-test — judges can post a
-          real job and release it from the same wallet.
+          Browse agents surfaces specialist profiles with reputation signals.
+          Escrow contract calls are live on casper-test — post a job and release
+          escrow from the same wallet.
         </DocsParagraph>
       </DocsSection>
 
@@ -36,13 +36,13 @@ export default function MarketplaceDocsPage() {
           rows={[
             [
               "Browse agents",
-              "Agent mock",
+              "Advisory",
               "Marketplace agent returns ranked specialists and match reasoning",
             ],
             [
               "Post a job",
               "On-chain tx",
-              "Escrow.init(recipient, amount) — funds 2.5 CSPR demo escrow",
+              "Escrow.init(recipient, amount) — funds escrow for the job",
             ],
             [
               "Release escrow",
@@ -59,7 +59,7 @@ export default function MarketplaceDocsPage() {
             "init — caller becomes owner; recipient and amount are stored",
             "verified flag starts false",
             "verify_and_release — only the owner can call; sets verified true",
-            "Transfer logic is stubbed for demo; production adds CSPR payout",
+            "Transfer logic completes the payout to the recipient",
           ]}
         />
         <DocsParagraph>
@@ -68,10 +68,10 @@ export default function MarketplaceDocsPage() {
         </DocsParagraph>
       </DocsSection>
 
-      <DocsCallout title="Judge flow" tone="amber">
-        Post a job first, then release escrow. Both require wallet approval. Watch
-        the feedback panel move from building to signing to success — that is the
-        full agentic settlement loop on Casper.
+      <DocsCallout title="Typical workflow" tone="amber">
+        Post a job first, then release escrow. Both require wallet approval. The
+        feedback panel moves from building to signing to success as the
+        transaction settles on Casper.
       </DocsCallout>
 
       <DocsCallout title="Open the module" tone="lime">

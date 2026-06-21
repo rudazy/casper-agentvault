@@ -32,47 +32,32 @@ flowchart LR
   S --> F[Feedback]
 ```
 
-## Tech Stack
+## Stack
 
-| Layer | Stack |
-|-------|-------|
+| Layer | Technology |
+|-------|------------|
 | Blockchain | Casper Network, Odra |
-| Frontend | Next.js, React, Tailwind CSS |
-| Wallet | CSPR.click |
-| Agents | LangChain, coordinator pattern |
+| Wallet | CSPR.click, Casper Wallet |
+| Settlement | Escrow and Attestation contracts on casper-test |
 
-## Quick Start
+## Documentation
 
-**Agents**
+In-app documentation is available at `/docs` on the deployed dashboard:
 
-```bash
-cd agents && npm install && npm run build && npm test
-```
-
-**Frontend**
-
-```bash
-cd frontend && cp .env.example .env.local && npm install && npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000).
-
-**On-chain** — set `NEXT_PUBLIC_ESCROW_PACKAGE_HASH` and `NEXT_PUBLIC_ATTESTATION_PACKAGE_HASH` in `frontend/.env.local` after deploy.
-
-## Project Structure
-
-```
-casper-agentvault/
-├── agents/       # Multi-agent reasoning
-├── contracts/    # Odra smart contracts
-├── frontend/     # Dashboard + wallet UI
-└── docs/assets/  # README visuals
-```
+- Getting Started
+- Wallet & Faucet
+- Architecture
+- Portfolio Guardian, RWA Oracle, Agent Marketplace
+- Smart Contracts
 
 ## Contracts
 
-- **Escrow** — `init`, `verify_and_release`
-- **Attestation** — `init`, `update_reputation`
+| Contract | Entry points |
+|----------|--------------|
+| Escrow | `init`, `verify_and_release` |
+| Attestation | `init`, `update_reputation` |
+
+Deployed package hashes for casper-test are in `contracts/agentvault-core/resources/casper-test-contracts.toml`.
 
 ## License
 

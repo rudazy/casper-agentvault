@@ -21,7 +21,7 @@ export const docsNavigation: DocsNavSection[] = [
       {
         href: "/docs/getting-started",
         label: "Getting Started",
-        description: "Run the dashboard in under five minutes",
+        description: "Connect your wallet and run your first actions",
       },
       {
         href: "/docs/faucet",

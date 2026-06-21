@@ -28,7 +28,7 @@ export function AgentVaultDashboard() {
     provider,
     isReady,
     isConnecting,
-    loadError,
+    connectError,
     connectWallet,
     disconnectWallet,
     switchAccount,
@@ -47,14 +47,16 @@ export function AgentVaultDashboard() {
   const activeTabMeta = TABS.find((t) => t.id === activeTab) ?? TABS[0];
 
   const statusMessage = useMemo(() => {
-    if (loadError) return loadError;
+    if (connectError) return connectError;
     if (!isReady) return "Loading CSPR.click wallet runtime...";
-    if (isConnecting) return "Complete sign-in in the CSPR.click modal.";
+    if (isConnecting) {
+      return "Approve the connection in Casper Wallet or the CSPR.click modal.";
+    }
     if (connected) {
       return `Connected via ${provider ?? "Casper wallet"}.`;
     }
     return "";
-  }, [connected, isConnecting, isReady, loadError, provider]);
+  }, [connected, connectError, isConnecting, isReady, provider]);
 
   const tabProps = {
     accent: activeTabMeta.accent,
@@ -117,7 +119,7 @@ export function AgentVaultDashboard() {
               <button
                 type="button"
                 onClick={connectWallet}
-                disabled={!isReady || isConnecting || Boolean(loadError)}
+                disabled={!isReady || isConnecting}
                 className="rounded bg-[#f5f5f5] px-4 py-2.5 font-sans text-xs font-medium text-[#0a0a0a] transition hover:bg-white disabled:opacity-60 sm:px-5 sm:text-sm"
               >
                 {isConnecting ? "Connecting..." : "Connect Wallet"}

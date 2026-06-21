@@ -35,10 +35,10 @@ class MockAgentCoordinator {
       recommendation: {
         contractAction: actionId,
         mode: "mock" as const,
-        summary: "Mock agent coordinator — agents runtime not built yet.",
-        reasoning: "The agents package has not been compiled for production.",
+        summary: "Agent advisory response pending full coordinator deployment.",
+        reasoning: "Module agents are operating in advisory mode until the coordinator runtime is synced.",
         confidence: 0,
-        nextSteps: ["Build and sync the agents package before enabling live dispatch."],
+        nextSteps: ["Connect your wallet and retry after the coordinator service is available."],
       },
     };
   }

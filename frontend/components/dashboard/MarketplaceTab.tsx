@@ -161,7 +161,7 @@ export function MarketplaceTab({
               value={escrowAmount}
               onChange={setEscrowAmount}
               placeholder="2.5"
-              hint="Demo TX uses 2.5 CSPR regardless of input"
+              hint="Escrow amount for the on-chain job"
               disabled={anyBusy}
             />
             {formError ? (

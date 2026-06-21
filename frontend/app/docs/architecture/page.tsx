@@ -12,16 +12,16 @@ export default function ArchitectureDocsPage() {
     <DocsPage
       eyebrow="Architecture"
       title="How the pieces connect"
-      lead="AgentVault is a three-layer system: a Next.js dashboard with CSPR.click wallet integration, a multi-agent reasoning layer, and Odra smart contracts on Casper testnet."
+      lead="AgentVault is a three-layer system: a web dashboard with CSPR.click wallet integration, a multi-agent reasoning layer, and Odra smart contracts on Casper testnet."
     >
       <DocsSection title="System layers">
         <DocsTable
-          headers={["Layer", "Technology", "Responsibility"]}
+          headers={["Layer", "Role", "Responsibility"]}
           rows={[
             [
               "Presentation",
-              "Next.js 16, React, Tailwind, Framer Motion",
-              "Dashboard UI, module tabs, tx feedback, activity timeline",
+              "Web dashboard",
+              "Module tabs, transaction feedback, activity timeline",
             ],
             [
               "Wallet",
@@ -30,8 +30,8 @@ export default function ArchitectureDocsPage() {
             ],
             [
               "Agents",
-              "LangChain coordinator, module agents",
-              "Reason about each action before wallet approval",
+              "Module-specific reasoning",
+              "Evaluate each action before wallet approval",
             ],
             [
               "Settlement",
@@ -40,7 +40,7 @@ export default function ArchitectureDocsPage() {
             ],
             [
               "Chain access",
-              "casper-js-sdk, CSPR.cloud RPC",
+              "Casper RPC",
               "Balance queries and transaction construction",
             ],
           ]}
@@ -51,24 +51,24 @@ export default function ArchitectureDocsPage() {
         <DocsFlow
           steps={[
             {
-              label: "UI trigger",
-              detail: "User clicks a module action in Guardian, RWA, or Marketplace",
+              label: "User action",
+              detail: "User selects an action in Guardian, RWA, or Marketplace",
             },
             {
-              label: "Agent API",
-              detail: "POST /api/agents routes to the module-specific agent",
+              label: "Agent reasoning",
+              detail: "Module agent returns summary, risk notes, and preview",
             },
             {
-              label: "Tx builder",
-              detail: "contract-actions.ts builds RPC, mock, or signed transaction",
+              label: "Transaction build",
+              detail: "System prepares RPC read, simulation, or signed transaction",
             },
             {
-              label: "CSPR.click send",
-              detail: "Wallet signs and submits to casper-test",
+              label: "Wallet signing",
+              detail: "CSPR.click requests approval and submits to casper-test",
             },
             {
-              label: "Feedback loop",
-              detail: "useContractActions updates status and activity timeline",
+              label: "Feedback",
+              detail: "Dashboard updates status and activity timeline",
             },
           ]}
         />
@@ -78,24 +78,24 @@ export default function ArchitectureDocsPage() {
         <DocsParagraph>
           Each module maps to a dedicated agent — Guardian, RWA, Marketplace. A
           shared coordinator dispatches requests by action ID, normalizes responses,
-          and returns structured insight (summary, reasoning, preview) to the UI.
-          This keeps module logic isolated while sharing one API surface.
+          and returns structured insight (summary, reasoning, preview) to the
+          dashboard. Module logic stays isolated behind one API surface.
         </DocsParagraph>
         <DocsList
           items={[
-            "Mock actions skip the chain — agent reasoning only",
-            "RPC actions query live state — Guardian balance scan",
-            "Transaction actions build casper-js-sdk payloads — wallet required",
+            "Advisory actions return agent reasoning without a chain call",
+            "RPC actions query live chain state — Guardian balance scan",
+            "Transaction actions require wallet approval and on-chain settlement",
           ]}
         />
       </DocsSection>
 
-      <DocsSection title="Repository layout">
+      <DocsSection title="Core components">
         <DocsList
           items={[
-            "agents/ — TypeScript agent implementations and coordinator",
-            "frontend/ — Dashboard, docs, wallet providers, contract actions",
-            "contracts/agentvault-core/ — Odra Escrow and Attestation modules",
+            "Agent layer — module agents and shared coordinator",
+            "Dashboard — wallet connection, module UI, transaction feedback",
+            "Contracts — Odra Escrow and Attestation on casper-test",
           ]}
         />
       </DocsSection>

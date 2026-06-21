@@ -66,8 +66,7 @@ export default function DocsIntroductionPage() {
         <DocsParagraph>
           Each module has its own tab in the{" "}
           <DocsLink href="/">dashboard</DocsLink>. Connect once with Casper Wallet
-          or CSPR.click email login, then move between modules without
-          re-authenticating.
+          via CSPR.click, then move between modules without re-authenticating.
         </DocsParagraph>
       </DocsSection>
 
@@ -99,23 +98,22 @@ export default function DocsIntroductionPage() {
           items={[
             "Upgradeable Odra contract packages for Escrow and Attestation",
             "Low-latency finality suitable for agent-driven workflows",
-            "Native CSPR settlement without wrapping assets for the demo path",
-            "CSPR.click wallet layer for Casper Wallet and email onboarding",
+            "Native CSPR settlement on casper-test",
+            "CSPR.click wallet layer for Casper Wallet connection and signing",
           ]}
         />
       </DocsSection>
 
-      <DocsSection title="What judges should look for">
+      <DocsSection title="Get started">
         <DocsList
           items={[
-            "End-to-end path: connect wallet → run module action → see agent + tx feedback",
-            "On-chain proof: Attestation and Escrow package calls on casper-test",
-            "Modular architecture: separate agents per module, shared coordinator",
-            "Production-minded UX: transaction states, activity timeline, clear module boundaries",
+            "Connect a funded casper-test wallet on the dashboard",
+            "Run one action per module to see agent reasoning and transaction feedback",
+            "Trace confirmed transactions on testnet.cspr.live",
           ]}
         />
-        <DocsCallout title="Try it in 5 minutes" tone="gold">
-          New to Casper testnet? Start with{" "}
+        <DocsCallout title="New to Casper testnet?" tone="gold">
+          Start with{" "}
           <DocsLink href="/docs/faucet">Wallet & Faucet</DocsLink>, then open the{" "}
           <Link href="/" className="text-[#f5c842] underline underline-offset-4">
             dashboard

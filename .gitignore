@@ -8,14 +8,19 @@ frontend/lib/agents/runtime/dist/
 
 .env
 .env.local
+.env.*.local
 .DS_Store
+Thumbs.db
+*.log
+*.pem
 
 tasks/
 mcps/
 terminals/
 agent-tools/
+.cursor/
+.vercel/
 
 # Local keys and env (never commit)
-*.pem
 **/.env
 !**/.env.example

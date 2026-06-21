@@ -7,16 +7,15 @@ import {
   DocsSection,
   DocsTable,
 } from "@/components/docs/DocsProse";
-import Link from "next/link";
 
 export default function RwaDocsPage() {
   return (
     <DocsPage
       eyebrow="RWA Oracle"
       title="Compliance attestations for real-world assets"
-      lead="Tokenized real-world assets need verifiable data — ownership records, jurisdiction, audit hashes. The RWA Oracle module packages that data into on-chain attestations with reputation scores judges can trace."
+      lead="Tokenized real-world assets need verifiable data — ownership records, jurisdiction, audit hashes. The RWA Oracle module packages that data into on-chain attestations with reputation scores anyone can verify."
     >
-      <DocsSection title="The story">
+      <DocsSection title="Overview">
         <DocsParagraph>
           Regulated assets cannot rely on off-chain PDFs alone. Investors and
           protocols need a tamper-evident signal that asset metadata was reviewed
@@ -25,9 +24,8 @@ export default function RwaDocsPage() {
           attestation on Casper that anyone can read.
         </DocsParagraph>
         <DocsParagraph>
-          This is the compliance layer for agentic RWA markets — not a full legal
-          framework, but the on-chain primitive that future verifiers, oracles, and
-          policy engines can build on.
+          This is the compliance layer for agentic RWA markets — the on-chain
+          primitive that verifiers, oracles, and policy engines can build on.
         </DocsParagraph>
       </DocsSection>
 
@@ -37,7 +35,7 @@ export default function RwaDocsPage() {
           rows={[
             [
               "Submit asset data",
-              "Agent mock",
+              "Advisory",
               "Agent validates asset ID, data hash, and jurisdiction fields",
             ],
             [
@@ -69,10 +67,10 @@ export default function RwaDocsPage() {
         </DocsParagraph>
       </DocsSection>
 
-      <DocsCallout title="Demo tip" tone="gold">
+      <DocsCallout title="Before you publish" tone="gold">
         Fill in Asset ID and Data Hash on the RWA tab before publishing. The agent
         uses your inputs in its reasoning preview. Publish attestation creates a
-        new on-chain record you can trace on testnet.cspr.live.
+        new on-chain record traceable on testnet.cspr.live.
       </DocsCallout>
     </DocsPage>
   );

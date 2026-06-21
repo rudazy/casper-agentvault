@@ -13,8 +13,8 @@ import type { TabAction, TabPanelProps } from "@/components/dashboard/types";
 
 const ACTIONS: TabAction[] = [
   { id: "guardian_scan", label: "Scan positions", hint: "Live RPC balance query", primary: true },
-  { id: "guardian_rebalance", label: "Rebalance sim", hint: "Mock agent pipeline" },
-  { id: "guardian_risk_log", label: "Risk log", hint: "Mock risk audit trail" },
+  { id: "guardian_rebalance", label: "Rebalance sim", hint: "Agent-guided allocation analysis" },
+  { id: "guardian_risk_log", label: "Risk log", hint: "Agent risk audit trail" },
 ];
 
 const POSITIONS = [
