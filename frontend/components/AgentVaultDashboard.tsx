@@ -28,9 +28,8 @@ export function AgentVaultDashboard() {
     provider,
     isReady,
     isConnecting,
-    loginMethod,
-    connectCasperWallet,
-    connectEmailWallet,
+    loadError,
+    connectWallet,
     disconnectWallet,
     switchAccount,
   } = useCasperWallet();
@@ -48,16 +47,14 @@ export function AgentVaultDashboard() {
   const activeTabMeta = TABS.find((t) => t.id === activeTab) ?? TABS[0];
 
   const statusMessage = useMemo(() => {
+    if (loadError) return loadError;
     if (!isReady) return "Loading CSPR.click wallet runtime...";
     if (isConnecting) return "Complete sign-in in the CSPR.click modal.";
-    if (connected && loginMethod === "email") {
-      return "Connected via CSPR.click social or email wallet.";
-    }
     if (connected) {
       return `Connected via ${provider ?? "Casper wallet"}.`;
     }
     return "";
-  }, [connected, isConnecting, isReady, loginMethod, provider]);
+  }, [connected, isConnecting, isReady, loadError, provider]);
 
   const tabProps = {
     accent: activeTabMeta.accent,
@@ -117,24 +114,14 @@ export function AgentVaultDashboard() {
                 </button>
               </div>
             ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={connectCasperWallet}
-                  disabled={!isReady || isConnecting}
-                  className="rounded bg-[#f5f5f5] px-3 py-2.5 font-sans text-xs font-medium text-[#0a0a0a] transition hover:bg-white disabled:opacity-60 sm:px-5 sm:text-sm"
-                >
-                  {isConnecting ? "..." : "Casper"}
-                </button>
-                <button
-                  type="button"
-                  onClick={connectEmailWallet}
-                  disabled={!isReady || isConnecting}
-                  className="rounded border border-white/25 px-3 py-2.5 font-sans text-xs font-medium transition hover:bg-white/5 disabled:opacity-60 sm:px-5 sm:text-sm"
-                >
-                  Email
-                </button>
-              </>
+              <button
+                type="button"
+                onClick={connectWallet}
+                disabled={!isReady || isConnecting || Boolean(loadError)}
+                className="rounded bg-[#f5f5f5] px-4 py-2.5 font-sans text-xs font-medium text-[#0a0a0a] transition hover:bg-white disabled:opacity-60 sm:px-5 sm:text-sm"
+              >
+                {isConnecting ? "Connecting..." : "Connect Wallet"}
+              </button>
             )}
           </div>
         </div>

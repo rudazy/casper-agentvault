@@ -10,14 +10,6 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import {
-  clickSDKOptions,
-  clickUIOptions,
-  CSPR_CLICK_SCRIPT_ID,
-  CSPR_CLICK_SCRIPT_SRC,
-} from "@/lib/casper/click-config";
-
-type WalletLoginMethod = "casper" | "email" | null;
 
 interface CasperWalletContextValue {
   publicKey: string | undefined;
@@ -25,19 +17,19 @@ interface CasperWalletContextValue {
   clickRef: ICSPRClickSDK | undefined;
   isReady: boolean;
   isConnecting: boolean;
-  loginMethod: WalletLoginMethod;
-  connectCasperWallet: () => void;
-  connectEmailWallet: () => void;
+  loadError: string | undefined;
+  connectWallet: () => void;
   disconnectWallet: () => void;
   switchAccount: () => void;
 }
 
 const CasperWalletContext = createContext<CasperWalletContextValue | undefined>(undefined);
 
-function assignClickGlobals() {
-  if (typeof window === "undefined") return;
-  window.clickUIOptions = clickUIOptions;
-  window.clickSDKOptions = clickSDKOptions;
+function extractAccount(event: unknown): AccountType | undefined {
+  if (!event || typeof event !== "object") return undefined;
+  const record = event as Record<string, unknown>;
+  const candidate = (record.account ?? record) as AccountType;
+  return candidate?.public_key ? candidate : undefined;
 }
 
 async function readActiveAccount(ref: ICSPRClickSDK): Promise<AccountType | undefined> {
@@ -54,90 +46,105 @@ export function CasperClickProvider({ children }: { children: ReactNode }) {
   const [clickRef, setClickRef] = useState<ICSPRClickSDK | undefined>(undefined);
   const [isReady, setIsReady] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
-  const [loginMethod, setLoginMethod] = useState<WalletLoginMethod>(null);
-  const [pendingMethod, setPendingMethod] = useState<WalletLoginMethod>(null);
+  const [loadError, setLoadError] = useState<string | undefined>(undefined);
 
   const refreshActiveAccount = useCallback(async (ref: ICSPRClickSDK) => {
     const account = await readActiveAccount(ref);
     setConnectedAccount(account);
-    if (!account) {
-      setLoginMethod(null);
-    }
   }, []);
 
   useEffect(() => {
-    assignClickGlobals();
+    let cancelled = false;
+    let bound = false;
+    let pollTimer: ReturnType<typeof setInterval> | undefined;
+    let loadTimer: ReturnType<typeof setTimeout> | undefined;
 
-    const onLoaded = () => {
-      if (!window.csprclick) return;
-      const ref = window.csprclick;
+    const bindSdk = (ref: ICSPRClickSDK) => {
+      if (cancelled || bound) return;
+      bound = true;
       setClickRef(ref);
-      setIsReady(true);
-      void refreshActiveAccount(ref);
-    };
+      setLoadError(undefined);
 
-    const onSignedIn = () => {
-      if (!window.csprclick) return;
-      if (pendingMethod) {
-        setLoginMethod(pendingMethod);
-        setPendingMethod(null);
-      }
-      setIsConnecting(false);
-      void refreshActiveAccount(window.csprclick);
-    };
+      let ready = false;
+      const markReady = () => {
+        if (cancelled || ready) return;
+        ready = true;
+        setIsReady(true);
+        void refreshActiveAccount(ref);
+      };
 
-    const onSignedOut = () => {
-      setConnectedAccount(undefined);
-      setLoginMethod(null);
-      setPendingMethod(null);
-      setIsConnecting(false);
-    };
-
-    const onAccountChanged = (event: Event) => {
-      const customEvent = event as CustomEvent<AccountType>;
-      const account = customEvent.detail;
-      if (account?.public_key) {
-        setConnectedAccount(account);
+      if (typeof ref.once === "function") {
+        ref.once("csprclick:loaded", markReady);
       } else {
-        setConnectedAccount(undefined);
-        setLoginMethod(null);
+        ref.on("csprclick:loaded", markReady);
       }
-      setIsConnecting(false);
+
+      // Loaded may have fired before listeners were attached.
+      window.setTimeout(markReady, 1000);
+
+      ref.on("csprclick:signed_in", (event) => {
+        if (cancelled) return;
+        const account = extractAccount(event);
+        setConnectedAccount(account);
+        setIsConnecting(false);
+        if (!account) {
+          void refreshActiveAccount(ref);
+        }
+      });
+
+      ref.on("csprclick:switched_account", (event) => {
+        if (cancelled) return;
+        const account = extractAccount(event);
+        setConnectedAccount(account);
+        setIsConnecting(false);
+      });
+
+      ref.on("csprclick:signed_out", () => {
+        if (cancelled) return;
+        setConnectedAccount(undefined);
+        setIsConnecting(false);
+      });
+
+      ref.on("csprclick:disconnected", () => {
+        if (cancelled) return;
+        setConnectedAccount(undefined);
+        setIsConnecting(false);
+      });
+
+      void readActiveAccount(ref).then((account) => {
+        if (cancelled) return;
+        if (account) {
+          setConnectedAccount(account);
+        }
+      });
+
     };
 
-    window.addEventListener("csprclick:loaded", onLoaded);
-    window.addEventListener("csprclick:signed_in", onSignedIn);
-    window.addEventListener("csprclick:signed_out", onSignedOut);
-    window.addEventListener("csprclick:account_changed", onAccountChanged);
-
-    if (!document.getElementById(CSPR_CLICK_SCRIPT_ID)) {
-      const script = document.createElement("script");
-      script.id = CSPR_CLICK_SCRIPT_ID;
-      script.src = CSPR_CLICK_SCRIPT_SRC;
-      script.async = true;
-      document.head.appendChild(script);
-    } else if (window.csprclick) {
-      onLoaded();
+    if (window.csprclick) {
+      bindSdk(window.csprclick);
+    } else {
+      pollTimer = setInterval(() => {
+        if (window.csprclick) {
+          bindSdk(window.csprclick);
+          if (pollTimer) clearInterval(pollTimer);
+        }
+      }, 200);
     }
 
+    loadTimer = setTimeout(() => {
+      if (cancelled || window.csprclick) return;
+      setLoadError("CSPR.click failed to load. Check your connection and refresh.");
+    }, 15000);
+
     return () => {
-      window.removeEventListener("csprclick:loaded", onLoaded);
-      window.removeEventListener("csprclick:signed_in", onSignedIn);
-      window.removeEventListener("csprclick:signed_out", onSignedOut);
-      window.removeEventListener("csprclick:account_changed", onAccountChanged);
+      cancelled = true;
+      if (pollTimer) clearInterval(pollTimer);
+      if (loadTimer) clearTimeout(loadTimer);
     };
-  }, [pendingMethod, refreshActiveAccount]);
+  }, [refreshActiveAccount]);
 
-  const connectCasperWallet = useCallback(() => {
+  const connectWallet = useCallback(() => {
     if (!clickRef) return;
-    setPendingMethod("casper");
-    setIsConnecting(true);
-    clickRef.signIn();
-  }, [clickRef]);
-
-  const connectEmailWallet = useCallback(() => {
-    if (!clickRef) return;
-    setPendingMethod("email");
     setIsConnecting(true);
     clickRef.signIn();
   }, [clickRef]);
@@ -145,8 +152,6 @@ export function CasperClickProvider({ children }: { children: ReactNode }) {
   const disconnectWallet = useCallback(() => {
     clickRef?.signOut();
     setConnectedAccount(undefined);
-    setLoginMethod(null);
-    setPendingMethod(null);
     setIsConnecting(false);
   }, [clickRef]);
 
@@ -162,9 +167,8 @@ export function CasperClickProvider({ children }: { children: ReactNode }) {
       clickRef,
       isReady,
       isConnecting,
-      loginMethod,
-      connectCasperWallet,
-      connectEmailWallet,
+      loadError,
+      connectWallet,
       disconnectWallet,
       switchAccount,
     }),
@@ -173,9 +177,8 @@ export function CasperClickProvider({ children }: { children: ReactNode }) {
       clickRef,
       isReady,
       isConnecting,
-      loginMethod,
-      connectCasperWallet,
-      connectEmailWallet,
+      loadError,
+      connectWallet,
       disconnectWallet,
       switchAccount,
     ],

@@ -37,7 +37,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full`}>
-      <body className="min-h-full bg-[#0a0a0a] font-mono text-[#f5f5f5] antialiased">
+      <body
+        id="agentvault-root"
+        className="min-h-full bg-[#0a0a0a] font-mono text-[#f5f5f5] antialiased"
+      >
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

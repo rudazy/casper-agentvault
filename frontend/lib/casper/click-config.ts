@@ -7,7 +7,7 @@ export const CSPR_CLICK_SCRIPT_SRC =
 
 export const clickUIOptions: ClickUIOptions = {
   uiContainer: "csprclick-ui",
-  rootAppElement: "body",
+  rootAppElement: "#agentvault-root",
   show1ClickModal: true,
   showTopBar: false,
   defaultTheme: "dark",

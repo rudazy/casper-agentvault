@@ -81,10 +81,9 @@ export default function GettingStartedPage() {
               body: (
                 <>
                   <p>
-                    Click <strong className="text-[#e0e0e0]">Casper</strong> for
-                    Casper Wallet or <strong className="text-[#e0e0e0]">Email</strong>{" "}
-                    for CSPR.click embedded wallet. Approve the connection in the
-                    modal.
+                    Click <strong className="text-[#e0e0e0]">Connect Wallet</strong>{" "}
+                    and choose your wallet in the CSPR.click modal. Approve the
+                    connection to continue.
                   </p>
                   <p>
                     If you do not have testnet funds yet, follow{" "}
