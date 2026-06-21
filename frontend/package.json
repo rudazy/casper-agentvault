@@ -4,7 +4,6 @@
   "private": true,
   "scripts": {
     "predev": "npm run build --prefix ../agents && node scripts/sync-agents.mjs",
-    "prebuild": "npm run build --prefix ../agents && node scripts/sync-agents.mjs",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
