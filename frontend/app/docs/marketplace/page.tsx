@@ -12,9 +12,9 @@ import Link from "next/link";
 export default function MarketplaceDocsPage() {
   return (
     <DocsPage
-      eyebrow="Agent Marketplace"
+      eyebrow="Agent Marketplace · Commerce"
       title="Hire agents with escrow-backed settlement"
-      lead="The Marketplace module is where autonomous work meets payment guarantees. Post a job funded in escrow, let agents compete on reputation, and release funds only when verification passes."
+      lead="The Commerce application on AgentVault — autonomous work with payment guarantees. Post a job funded in escrow, let agents compete on reputation, and release funds only when verification passes."
     >
       <DocsSection title="Overview">
         <DocsParagraph>
@@ -74,7 +74,7 @@ export default function MarketplaceDocsPage() {
         transaction settles on Casper.
       </DocsCallout>
 
-      <DocsCallout title="Open the module" tone="lime">
+      <DocsCallout title="Open the application" tone="lime">
         <Link href="/" className="text-[#c8f135] underline underline-offset-4">
           Dashboard → Marketplace tab
         </Link>

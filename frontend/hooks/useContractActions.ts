@@ -93,7 +93,7 @@ export function useContractActions() {
       if (!publicKey) {
         setFeedback({
           status: "error",
-          message: "Connect your wallet before running module actions.",
+          message: "Connect your wallet before running application actions.",
         });
         return;
       }
@@ -102,7 +102,7 @@ export function useContractActions() {
       setFeedback({
         status: "building",
         actionLabel: ACTION_LABELS[actionId],
-        message: "Consulting module agent...",
+        message: "Consulting agent...",
       });
 
       let agentInsight: AgentInsight | undefined;

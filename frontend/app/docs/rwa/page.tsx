@@ -11,9 +11,9 @@ import {
 export default function RwaDocsPage() {
   return (
     <DocsPage
-      eyebrow="RWA Oracle"
+      eyebrow="RWA Oracle · Compliance"
       title="Compliance attestations for real-world assets"
-      lead="Tokenized real-world assets need verifiable data — ownership records, jurisdiction, audit hashes. The RWA Oracle module packages that data into on-chain attestations with reputation scores anyone can verify."
+      lead="The Compliance application on AgentVault — tokenized real-world assets need verifiable data. Ownership records, jurisdiction, and audit hashes become on-chain attestations with reputation scores anyone can verify."
     >
       <DocsSection title="Overview">
         <DocsParagraph>

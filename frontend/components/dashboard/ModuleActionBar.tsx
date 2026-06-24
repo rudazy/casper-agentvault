@@ -28,7 +28,7 @@ export function ModuleActionBar({
     <div className="rounded border border-white/10 bg-black/50 p-4 sm:p-6">
       <div className="mb-4">
         <p className="font-sans text-sm font-medium tracking-wide sm:text-base">
-          Module actions
+          Application actions
         </p>
         <p className="mt-1 font-mono text-[10px] text-[#666] sm:text-xs">
           {connected

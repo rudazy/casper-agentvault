@@ -5,8 +5,8 @@
 </p>
 
 <p align="center">
-  <strong>The unified smart wallet for agentic DeFi and RWA on Casper Network.</strong><br />
-  One wallet. Three autonomous modules.
+  <strong>Autonomous operating system for on-chain AI agents.</strong><br />
+  One platform — Finance, Compliance, and Commerce applications on Casper.
 </p>
 
 <p align="center">
@@ -19,11 +19,11 @@
 
 ## Overview
 
-| Module | Purpose |
-|--------|---------|
-| **Portfolio Guardian** | Yield optimization and risk monitoring |
-| **RWA Oracle** | Compliance attestations for real-world assets |
-| **Agent Marketplace** | Escrow-powered hiring with on-chain reputation |
+| Application | Domain | Purpose |
+|-------------|--------|---------|
+| **Portfolio Guardian** | Finance | Yield optimization and risk monitoring |
+| **RWA Oracle** | Compliance | Attestations for real-world assets |
+| **Agent Marketplace** | Commerce | Escrow-powered hiring with on-chain reputation |
 
 ## How It Works
 

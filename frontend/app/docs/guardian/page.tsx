@@ -11,9 +11,9 @@ import Link from "next/link";
 export default function GuardianDocsPage() {
   return (
     <DocsPage
-      eyebrow="Portfolio Guardian"
+      eyebrow="Portfolio Guardian · Finance"
       title="Autonomous portfolio monitoring"
-      lead="The Guardian module is your DeFi command layer — it reads live on-chain balances, simulates rebalance strategies, and surfaces risk signals before capital moves."
+      lead="The Finance application on AgentVault — reads live on-chain balances, simulates rebalance strategies, and surfaces risk signals before capital moves."
     >
       <DocsSection title="Overview">
         <DocsParagraph>

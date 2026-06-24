@@ -12,7 +12,7 @@ export default function ArchitectureDocsPage() {
     <DocsPage
       eyebrow="Architecture"
       title="How the pieces connect"
-      lead="AgentVault is a three-layer system: a web dashboard with CSPR.click wallet integration, a multi-agent reasoning layer, and Odra smart contracts on Casper testnet."
+      lead="AgentVault is an operating system for on-chain AI agents. The dashboard is the shell; CSPR.click is the wallet layer; module agents form the reasoning layer; Odra contracts on casper-test are the settlement layer. Finance, Compliance, and Commerce are applications built on top."
     >
       <DocsSection title="System layers">
         <DocsTable
@@ -76,7 +76,7 @@ export default function ArchitectureDocsPage() {
 
       <DocsSection title="Agent coordinator pattern">
         <DocsParagraph>
-          Each module maps to a dedicated agent — Guardian, RWA, Marketplace. A
+          Each application maps to a dedicated agent — Guardian, RWA, Marketplace. A
           shared coordinator dispatches requests by action ID, normalizes responses,
           and returns structured insight (summary, reasoning, preview) to the
           dashboard. Module logic stays isolated behind one API surface.
@@ -94,7 +94,7 @@ export default function ArchitectureDocsPage() {
         <DocsList
           items={[
             "Agent layer — module agents and shared coordinator",
-            "Dashboard — wallet connection, module UI, transaction feedback",
+            "Dashboard — wallet connection, application UI, transaction feedback",
             "Contracts — Odra Escrow and Attestation on casper-test",
           ]}
         />

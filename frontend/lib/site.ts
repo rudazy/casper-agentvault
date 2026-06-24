@@ -6,7 +6,7 @@ export const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ?? `https://${SITE_DOMAIN}`;
 
 export const SITE_TAGLINE =
-  "Agentic Smart Wallet for DeFi and RWA on Casper Network";
+  "Autonomous operating system for on-chain AI agents";
 
 export const SITE_DESCRIPTION =
-  "One Casper wallet and three autonomous modules — portfolio protection, RWA compliance, and agent hiring — with on-chain settlement on casper-test.";
+  "AgentVault is the OS layer for autonomous agents on Casper — Finance, Compliance, and Commerce applications share one wallet, agent coordinator, and on-chain settlement.";

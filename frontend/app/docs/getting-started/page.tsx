@@ -14,7 +14,7 @@ export default function GettingStartedPage() {
     <DocsPage
       eyebrow="Getting Started"
       title="Start using AgentVault"
-      lead="Connect a funded casper-test wallet, explore the three modules, and run your first on-chain actions from the dashboard."
+      lead="Connect a funded casper-test wallet, explore the three applications on the AgentVault OS, and run your first on-chain actions from the dashboard."
     >
       <DocsSection title="Before you begin">
         <DocsList
@@ -67,7 +67,7 @@ export default function GettingStartedPage() {
               ),
             },
             {
-              title: "Run actions across all three modules",
+              title: "Run actions across all three applications",
               body: (
                 <DocsList
                   items={[
@@ -85,7 +85,7 @@ export default function GettingStartedPage() {
       <DocsSection title="Confirm on-chain activity">
         <DocsParagraph>
           Transaction actions show building, signing, and success states in the
-          feedback panel. Each confirmed transaction appears in the module activity
+          feedback panel. Each confirmed transaction appears in the application activity
           timeline. Copy the transaction hash from the success message and trace it
           on{" "}
           <DocsLink href="https://testnet.cspr.live" external>
@@ -94,7 +94,7 @@ export default function GettingStartedPage() {
           .
         </DocsParagraph>
         <DocsCallout title="Recommended first run" tone="amber">
-          Complete one action per module — Guardian scan, RWA publish, and
+          Complete one action per application — Guardian scan, RWA publish, and
           Marketplace post job — and confirm each shows success feedback with a
           transaction hash where applicable.
         </DocsCallout>
@@ -102,7 +102,7 @@ export default function GettingStartedPage() {
 
       <DocsSection title="Go deeper">
         <DocsParagraph>
-          Explore the module guides —{" "}
+          Explore the application guides —{" "}
           <DocsLink href="/docs/guardian">Portfolio Guardian</DocsLink>,{" "}
           <DocsLink href="/docs/rwa">RWA Oracle</DocsLink>,{" "}
           <DocsLink href="/docs/marketplace">Agent Marketplace</DocsLink> — and

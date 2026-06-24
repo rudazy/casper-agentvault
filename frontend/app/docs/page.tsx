@@ -14,8 +14,8 @@ export default function DocsIntroductionPage() {
   return (
     <DocsPage
       eyebrow="Documentation"
-      title="The unified smart wallet for agentic finance"
-      lead="AgentVault gives users one Casper wallet and three autonomous modules — portfolio protection, RWA compliance, and agent hiring — each backed by on-chain contracts and AI reasoning before every action."
+      title="Autonomous operating system for on-chain AI agents"
+      lead="AgentVault is not three separate tools — it is one platform where autonomous agents connect to Casper, reason before every action, and settle through shared wallet and contract infrastructure. Finance, Compliance, and Commerce are applications built on that operating system."
     >
       <DocsSection title="The problem">
         <DocsParagraph>
@@ -28,45 +28,50 @@ export default function DocsIntroductionPage() {
         </DocsParagraph>
         <DocsParagraph>
           Most wallets were built for manual clicks. Most agent frameworks were
-          built without settlement layers. AgentVault bridges both: a single
-          dashboard where every module action is explained by an agent, signed by
-          your wallet, and settled on Casper Network.
+          built without settlement layers. AgentVault is the layer in between: an
+          operating system where every application action is explained by an agent,
+          signed by your wallet, and settled on Casper Network.
         </DocsParagraph>
       </DocsSection>
 
       <DocsSection title="The solution in one sentence">
         <DocsCallout title="AgentVault" tone="lime">
-          One wallet. Three modules. Every action runs through agent reasoning,
-          wallet approval, and Casper smart contracts — Escrow for payments and
-          Attestation for reputation and compliance signals.
+          One operating system. Three applications. Every action runs through
+          agent reasoning, wallet approval, and Casper smart contracts — Escrow
+          for Commerce and Attestation for Compliance signals.
         </DocsCallout>
       </DocsSection>
 
-      <DocsSection title="Three modules, one command center">
+      <DocsSection title="Three applications on one platform">
         <DocsTable
-          headers={["Module", "What it does", "On-chain touchpoint"]}
+          headers={["Application", "Domain", "What it does", "On-chain touchpoint"]}
           rows={[
             [
               "Portfolio Guardian",
+              "Finance",
               "Monitors positions, simulates rebalances, surfaces risk",
               "Live CSPR balance via RPC; agent-guided simulations",
             ],
             [
               "RWA Oracle",
+              "Compliance",
               "Submits and verifies real-world asset data",
               "Attestation contract — publish and update reputation scores",
             ],
             [
               "Agent Marketplace",
+              "Commerce",
               "Browse agents, post jobs, release escrow on completion",
-              "Escrow contract — init job funding, verify_and_release",
+              "Escrow contract — job funding, verify_and_release",
             ],
           ]}
         />
         <DocsParagraph>
-          Each module has its own tab in the{" "}
+          Each application has its own tab in the{" "}
           <DocsLink href="/">dashboard</DocsLink>. Connect once with Casper Wallet
-          via CSPR.click, then move between modules without re-authenticating.
+          via CSPR.click, then move across Finance, Compliance, and Commerce without
+          re-authenticating — the same agent coordinator and settlement layer
+          powers all three.
         </DocsParagraph>
       </DocsSection>
 
@@ -108,7 +113,7 @@ export default function DocsIntroductionPage() {
         <DocsList
           items={[
             "Connect a funded casper-test wallet on the dashboard",
-            "Run one action per module to see agent reasoning and transaction feedback",
+            "Run one action per application to see agent reasoning and transaction feedback",
             "Trace confirmed transactions on testnet.cspr.live",
           ]}
         />

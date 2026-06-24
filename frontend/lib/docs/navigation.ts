@@ -16,7 +16,7 @@ export const docsNavigation: DocsNavSection[] = [
       {
         href: "/docs",
         label: "Introduction",
-        description: "What AgentVault is and why it exists",
+        description: "The on-chain agent OS and its three applications",
       },
       {
         href: "/docs/getting-started",
@@ -31,22 +31,22 @@ export const docsNavigation: DocsNavSection[] = [
     ],
   },
   {
-    title: "Modules",
+    title: "Applications",
     items: [
       {
         href: "/docs/guardian",
         label: "Portfolio Guardian",
-        description: "Yield monitoring and risk controls",
+        description: "Finance — yield monitoring and risk controls",
       },
       {
         href: "/docs/rwa",
         label: "RWA Oracle",
-        description: "Compliance attestations for real-world assets",
+        description: "Compliance — attestations for real-world assets",
       },
       {
         href: "/docs/marketplace",
         label: "Agent Marketplace",
-        description: "Escrow-powered agent hiring",
+        description: "Commerce — escrow-powered agent hiring",
       },
     ],
   },

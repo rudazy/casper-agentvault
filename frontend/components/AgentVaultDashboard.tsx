@@ -12,10 +12,16 @@ import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
-const TABS: { id: TabId; label: string; shortLabel: string; accent: string }[] = [
-  { id: "guardian", label: "Portfolio Guardian", shortLabel: "Guardian", accent: "#c8f135" },
-  { id: "rwa", label: "RWA Oracle", shortLabel: "RWA", accent: "#f5c842" },
-  { id: "marketplace", label: "Agent Marketplace", shortLabel: "Market", accent: "#ff8a3d" },
+const TABS: {
+  id: TabId;
+  label: string;
+  domain: string;
+  shortLabel: string;
+  accent: string;
+}[] = [
+  { id: "guardian", label: "Portfolio Guardian", domain: "Finance", shortLabel: "Guardian", accent: "#c8f135" },
+  { id: "rwa", label: "RWA Oracle", domain: "Compliance", shortLabel: "RWA", accent: "#f5c842" },
+  { id: "marketplace", label: "Agent Marketplace", domain: "Commerce", shortLabel: "Market", accent: "#ff8a3d" },
 ];
 
 function shortenKey(key: string): string {
@@ -87,7 +93,7 @@ export function AgentVaultDashboard() {
                 AgentVault
               </p>
               <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#666]">
-                Casper Network
+                On-chain agent OS
               </p>
             </div>
           </div>
@@ -141,13 +147,14 @@ export function AgentVaultDashboard() {
           className="mb-8 text-center sm:mb-12"
         >
           <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.28em] text-[#ff8a3d] sm:text-xs">
-            Agentic command center
+            Autonomous operating system
           </p>
           <h1 className="font-sans text-3xl font-bold tracking-tight sm:text-5xl">
-            Your Agentic Command Center
+            The OS for on-chain AI agents
           </h1>
           <p className="mx-auto mt-4 max-w-2xl font-mono text-sm leading-relaxed text-[#888] sm:text-base">
-            One wallet. Three autonomous agents working for you on Casper.
+            One platform. Three applications — Finance, Compliance, and Commerce —
+            each powered by autonomous agents and settled on Casper.
           </p>
           {statusMessage ? (
             <p className="mx-auto mt-4 max-w-xl rounded border border-[#c8f135]/25 bg-[#c8f135]/10 px-4 py-2 font-mono text-xs text-[#d8f58a]">
@@ -177,7 +184,12 @@ export function AgentVaultDashboard() {
                 }`}
               >
                 <span className="sm:hidden">{tab.shortLabel}</span>
-                <span className="hidden sm:inline">{tab.label}</span>
+                <span className="hidden sm:inline">
+                  <span className="block">{tab.label}</span>
+                  <span className="mt-0.5 block font-mono text-[10px] font-normal uppercase tracking-wider text-[#666]">
+                    {tab.domain}
+                  </span>
+                </span>
               </button>
             );
           })}

@@ -149,7 +149,7 @@ export default function FaucetPage() {
 
       <DocsSection title="You are ready">
         <DocsParagraph>
-          With a funded wallet connected, explore each module in the docs —{" "}
+          With a funded wallet connected, explore each application in the docs —{" "}
           <DocsLink href="/docs/guardian">Guardian</DocsLink>,{" "}
           <DocsLink href="/docs/rwa">RWA Oracle</DocsLink>, and{" "}
           <DocsLink href="/docs/marketplace">Marketplace</DocsLink> — then run
