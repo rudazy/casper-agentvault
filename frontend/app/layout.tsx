@@ -5,6 +5,7 @@ import {
   CSPR_CLICK_SCRIPT_ID,
   CSPR_CLICK_SCRIPT_SRC,
 } from "@/lib/casper/click-config";
+import { SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/lib/site";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
@@ -23,18 +24,24 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Casper AgentVault",
-  description: "Agentic Smart Wallet for DeFi and RWA on Casper Network",
+  metadataBase: new URL(SITE_URL),
+  title: SITE_NAME,
+  description: SITE_TAGLINE,
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
-    title: "Casper AgentVault",
-    description: "Agentic Smart Wallet for DeFi and RWA on Casper Network",
+    title: SITE_NAME,
+    description: SITE_TAGLINE,
+    url: SITE_URL,
+    siteName: SITE_NAME,
     type: "website",
-    images: [{ url: "/og-image.jpg", width: 1200, height: 630, alt: "Casper AgentVault" }],
+    images: [{ url: "/og-image.jpg", width: 1200, height: 630, alt: SITE_NAME }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Casper AgentVault",
-    description: "Agentic Smart Wallet for DeFi and RWA on Casper Network",
+    title: SITE_NAME,
+    description: SITE_TAGLINE,
     images: ["/og-image.jpg"],
   },
 };

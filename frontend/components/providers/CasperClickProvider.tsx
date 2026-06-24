@@ -2,6 +2,10 @@
 
 import type { AccountType, ICSPRClickSDK } from "@make-software/csprclick-core-types";
 import {
+  CSPR_CLICK_PRODUCTION_SETUP_MESSAGE,
+  CSPR_CLICK_TEMPLATE_APP_ID,
+} from "@/lib/casper/click-config";
+import {
   createContext,
   useCallback,
   useContext,
@@ -12,6 +16,25 @@ import {
 } from "react";
 
 const CASPER_WALLET_PROVIDER = "casper-wallet";
+const SDK_LOAD_TIMEOUT_MS = 12_000;
+
+function isLocalhostHost(hostname: string): boolean {
+  return hostname === "localhost" || hostname === "127.0.0.1";
+}
+
+function getConfiguredAppId(): string {
+  if (typeof window !== "undefined" && window.clickSDKOptions?.appId) {
+    return window.clickSDKOptions.appId;
+  }
+  return CSPR_CLICK_TEMPLATE_APP_ID;
+}
+
+function getProductionAppIdError(): string | undefined {
+  if (typeof window === "undefined") return undefined;
+  if (isLocalhostHost(window.location.hostname)) return undefined;
+  if (getConfiguredAppId() !== CSPR_CLICK_TEMPLATE_APP_ID) return undefined;
+  return CSPR_CLICK_PRODUCTION_SETUP_MESSAGE;
+}
 
 interface CasperWalletContextValue {
   publicKey: string | undefined;
@@ -56,9 +79,18 @@ export function CasperClickProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    const productionAppIdError = getProductionAppIdError();
+    if (productionAppIdError) {
+      setConnectError(productionAppIdError);
+    }
+
     let cancelled = false;
     let bound = false;
     let pollTimer: ReturnType<typeof setInterval> | undefined;
+    const loadTimeout = window.setTimeout(() => {
+      if (cancelled || bound) return;
+      setConnectError((current) => current ?? getProductionAppIdError() ?? "CSPR.click failed to load. Check your network and try again.");
+    }, SDK_LOAD_TIMEOUT_MS);
 
     const bindSdk = (ref: ICSPRClickSDK) => {
       if (cancelled || bound) return;
@@ -117,6 +149,7 @@ export function CasperClickProvider({ children }: { children: ReactNode }) {
 
     return () => {
       cancelled = true;
+      window.clearTimeout(loadTimeout);
       if (pollTimer) clearInterval(pollTimer);
     };
   }, [refreshActiveAccount]);

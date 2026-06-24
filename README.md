@@ -10,6 +10,10 @@
 </p>
 
 <p align="center">
+  <a href="https://casperagent.xyz">casperagent.xyz</a>
+</p>
+
+<p align="center">
   <img src="docs/assets/icon.png" alt="AgentVault" width="64" height="64" />
 </p>
 
@@ -42,7 +46,7 @@ flowchart LR
 
 ## Documentation
 
-In-app documentation is available at `/docs` on the deployed dashboard:
+In-app documentation is available at [casperagent.xyz/docs](https://casperagent.xyz/docs):
 
 - Getting Started
 - Wallet & Faucet
