@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/rudazy/casper-agentvault/security/advisories/new
+    about: Report a security issue privately (do not open a public issue).
+  - name: Live product / docs
+    url: https://casperagent.xyz/docs
+    about: Product documentation for the deployed MVP.

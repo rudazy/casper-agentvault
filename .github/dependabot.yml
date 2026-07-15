@@ -1,0 +1,60 @@
+# Dependabot: dependency updates + security PRs
+# Enable Dependabot alerts/security updates in GitHub Settings → Code security
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "frontend"
+    groups:
+      frontend-prod:
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "@types/*"
+          - "eslint*"
+          - "typescript"
+          - "tailwindcss"
+          - "@tailwindcss/*"
+      frontend-dev:
+        patterns:
+          - "@types/*"
+          - "eslint*"
+          - "typescript"
+          - "tailwindcss"
+          - "@tailwindcss/*"
+
+  - package-ecosystem: "npm"
+    directory: "/agents"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "agents"
+
+  - package-ecosystem: "cargo"
+    directory: "/contracts/agentvault-core"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "contracts"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "ci"
