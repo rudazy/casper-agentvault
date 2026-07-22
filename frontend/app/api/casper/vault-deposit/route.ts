@@ -128,28 +128,77 @@ export async function POST(request: Request) {
     }
 
     const amountMotes = csprToMotes(body.amountCspr, "2");
-    const proxyWasm = resolveProxyWasm();
-    const outerArgs = buildOdraProxyCallArgs(
-      normalizePackageHash(VAULT_PACKAGE_HASH),
-      "deposit",
-      Args.fromMap({}),
-      amountMotes,
-    );
+    let proxyWasm: Uint8Array;
+    try {
+      proxyWasm = resolveProxyWasm();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      return NextResponse.json(
+        {
+          error: `${msg} cwd=${process.cwd()}`,
+          code: "PROXY_WASM_MISSING",
+        },
+        { status: 500 },
+      );
+    }
 
-    const transaction = new SessionBuilder()
-      .from(operator.publicKey)
-      .wasm(proxyWasm)
-      .runtimeArgs(outerArgs)
-      .chainName(CASPER_CHAIN_NAME)
-      .ttl(1_800_000)
-      .payment(PROXY_PAYMENT, 1)
-      .build();
+    if (proxyWasm.byteLength < 1000) {
+      return NextResponse.json(
+        {
+          error: `Proxy WASM looks corrupt (size=${proxyWasm.byteLength}).`,
+          code: "PROXY_WASM_INVALID",
+        },
+        { status: 500 },
+      );
+    }
 
-    transaction.sign(operator);
+    let transaction;
+    try {
+      const outerArgs = buildOdraProxyCallArgs(
+        normalizePackageHash(VAULT_PACKAGE_HASH),
+        "deposit",
+        Args.fromMap({}),
+        amountMotes,
+      );
+
+      transaction = new SessionBuilder()
+        .from(operator.publicKey)
+        .wasm(proxyWasm)
+        .runtimeArgs(outerArgs)
+        .chainName(CASPER_CHAIN_NAME)
+        .ttl(1_800_000)
+        .payment(PROXY_PAYMENT, 1)
+        .build();
+
+      transaction.sign(operator);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      return NextResponse.json(
+        {
+          error: `Failed to build/sign payable deposit session: ${msg}`,
+          code: "SESSION_BUILD_FAILED",
+          hint:
+            "Usually a casper-js-sdk bundling issue. Ensure serverExternalPackages includes casper-js-sdk.",
+        },
+        { status: 500 },
+      );
+    }
 
     const rpc = createRpcClient();
     const network = await CasperNetwork.create(rpc);
-    const result = await network.putTransaction(transaction);
+    let result;
+    try {
+      result = await network.putTransaction(transaction);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      return NextResponse.json(
+        {
+          error: `Node rejected deposit transaction: ${msg}`,
+          code: "PUT_TRANSACTION_FAILED",
+        },
+        { status: 502 },
+      );
+    }
     const transactionHash =
       result && "transactionHash" in result && result.transactionHash
         ? result.transactionHash.toHex()
