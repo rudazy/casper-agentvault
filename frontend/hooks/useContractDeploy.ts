@@ -30,16 +30,24 @@ export function useContractDeploy() {
     attestation?: string;
     vault?: string;
   }>({});
+  const [configuredHashes, setConfiguredHashes] = useState<{
+    escrow: string;
+    attestation: string;
+    vault: string;
+  }>({ escrow: "", attestation: "", vault: "" });
+  const [wasmAvailable, setWasmAvailable] = useState<{
+    Escrow?: boolean;
+    Attestation?: boolean;
+    Vault?: boolean;
+  }>({});
 
   const refreshStatus = useCallback(async () => {
-    if (!publicKey) {
-      setPostJobSupported(null);
-      setDeployerHashes({});
-      return;
-    }
     try {
-      const status = await fetchDeployStatus(publicKey);
+      // publicKey optional: still load configured package hashes + wasm availability
+      const status = await fetchDeployStatus(publicKey ?? "");
       setPostJobSupported(status.postJobSupported);
+      setConfiguredHashes(status.configured);
+      setWasmAvailable(status.wasmAvailable ?? {});
       setDeployerHashes({
         escrow: status.deployer.escrow,
         attestation: status.deployer.attestation,
@@ -214,6 +222,8 @@ export function useContractDeploy() {
     busyContract,
     postJobSupported,
     deployerHashes,
+    configuredHashes,
+    wasmAvailable,
     runDeploy,
     runSync,
     clearFeedback,

@@ -11,6 +11,11 @@ export interface DeployBuildResponse {
 export interface DeployStatusResponse {
   postJobSupported: boolean;
   configured: { escrow: string; attestation: string; vault: string };
+  wasmAvailable?: {
+    Escrow?: boolean;
+    Attestation?: boolean;
+    Vault?: boolean;
+  };
   deployer: {
     escrow?: string;
     attestation?: string;
@@ -35,11 +40,13 @@ export async function requestDeployBuild(
   return data as DeployBuildResponse;
 }
 
-export async function fetchDeployStatus(publicKey: string): Promise<DeployStatusResponse> {
-  const res = await fetch(
-    `/api/casper/deploy?publicKey=${encodeURIComponent(publicKey)}`,
-    { cache: "no-store" },
-  );
+export async function fetchDeployStatus(publicKey = ""): Promise<DeployStatusResponse> {
+  const qs = publicKey
+    ? `?publicKey=${encodeURIComponent(publicKey)}`
+    : "";
+  const res = await fetch(`/api/casper/deploy${qs}`, {
+    cache: "no-store",
+  });
   const data = await res.json();
   if (!res.ok) {
     throw new Error(data.error ?? "Failed to read deploy status.");

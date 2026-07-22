@@ -2,6 +2,7 @@ import {
   buildDeployTransaction,
   escrowSupportsPostJob,
   getConfiguredHashes,
+  getWasmAvailability,
   persistDeployedHashes,
   queryDeployerBalance,
   queryDeployerPackageHashes,
@@ -22,6 +23,7 @@ export async function GET(request: Request) {
 
     const postJobSupported = await escrowSupportsPostJob();
     const configured = getConfiguredHashes();
+    const wasmAvailable = getWasmAvailability();
 
     let deployer: {
       escrow?: string;
@@ -39,7 +41,12 @@ export async function GET(request: Request) {
       }
     }
 
-    return NextResponse.json({ postJobSupported, configured, deployer });
+    return NextResponse.json({
+      postJobSupported,
+      configured,
+      wasmAvailable,
+      deployer,
+    });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to read deploy status.";

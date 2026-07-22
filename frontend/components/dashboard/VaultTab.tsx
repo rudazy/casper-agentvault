@@ -78,11 +78,23 @@ export function VaultTab({
 
   const deployBusy = deploy?.busyContract != null;
   const anyBusy = busyAction !== null || deployBusy;
-  const vaultHashPresent = Boolean(deploy?.deployerHashes.vault);
+  const configuredVault = (deploy?.configuredHashes.vault ?? "").trim();
+  const vaultLive = configuredVault.length > 0;
+  const vaultOnAccount = Boolean(deploy?.deployerHashes.vault);
+  const vaultWasmReady = deploy?.wasmAvailable?.Vault === true;
   const canSyncVault =
     Boolean(deploy?.deployerHashes.escrow) &&
     Boolean(deploy?.deployerHashes.attestation) &&
-    vaultHashPresent;
+    vaultOnAccount;
+  const packageStatValue = vaultLive ? "Live" : vaultOnAccount ? "Ready" : "Unset";
+  const packageStatSub = vaultLive
+    ? "configured package"
+    : vaultOnAccount
+      ? "hash on account"
+      : "set package hash";
+  const vaultExplorer = vaultLive
+    ? `https://testnet.cspr.live/contract-package/${configuredVault.replace(/^hash-/, "")}`
+    : null;
 
   const agentReady = useMemo(
     () => agentPublicKey.trim().length >= 16,
@@ -151,16 +163,20 @@ export function VaultTab({
         <StatCard label="Action bit" value="0x1" accent={accent} subtext="transfer" />
         <StatCard
           label="Package"
-          value={vaultHashPresent ? "Ready" : "Deploy"}
+          value={packageStatValue}
           accent={accent}
-          subtext={vaultHashPresent ? "hash on account" : "install Vault WASM"}
+          subtext={packageStatSub}
         />
       </div>
 
       {deploy ? (
         <PanelCard
-          title="Deploy Vault package"
-          subtitle="Install Vault.wasm on casper-test, then sync hashes (Escrow + Attestation + Vault)"
+          title={vaultLive ? "Vault package (live on casper-test)" : "Vault package setup"}
+          subtitle={
+            vaultLive
+              ? "Package hash is configured. Authorize / revoke below. You can still install a new Vault instance from this wallet if WASM is available (~500 CSPR)."
+              : "Install Vault.wasm to casper-test from this wallet, then sync package hashes."
+          }
         >
           {deploy.feedback.status !== "idle" ? (
             <div className="mb-4">
@@ -170,15 +186,38 @@ export function VaultTab({
               />
             </div>
           ) : null}
+
+          {vaultLive ? (
+            <div className="mb-4 space-y-2">
+              <p className="font-mono text-[10px] leading-relaxed text-[#888]">
+                Configured package: {configuredVault}
+              </p>
+              {vaultExplorer ? (
+                <a
+                  href={vaultExplorer}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block font-mono text-[10px] uppercase tracking-wider text-[#c8f135] transition hover:opacity-80"
+                >
+                  Open package on explorer
+                </a>
+              ) : null}
+            </div>
+          ) : null}
+
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              disabled={!connected || deployBusy}
+              disabled={!connected || deployBusy || !vaultWasmReady}
               onClick={() => void deploy.runDeploy("Vault")}
               className="rounded px-4 py-2 font-sans text-xs font-medium text-[#0a0a0a] disabled:opacity-50"
               style={{ backgroundColor: accent }}
             >
-              {deploy.busyContract === "Vault" ? "Deploying..." : "Deploy Vault"}
+              {deploy.busyContract === "Vault"
+                ? "Deploying..."
+                : vaultLive
+                  ? "Install new Vault"
+                  : "Deploy Vault"}
             </button>
             <button
               type="button"
@@ -189,16 +228,24 @@ export function VaultTab({
               {deploy.busyContract === "sync" ? "Syncing..." : "Sync package hashes"}
             </button>
           </div>
-          <p className="mt-3 font-mono text-[10px] leading-relaxed text-[#666]">
-            Deploy requires Vault.wasm from{" "}
-            <span className="text-[#888]">
-              contracts/agentvault-core/scripts/build-windows.ps1
-            </span>
-            . After deploy, Sync writes package hashes for the dashboard.
-          </p>
+
+          {!vaultWasmReady ? (
+            <p className="mt-3 font-mono text-[10px] leading-relaxed text-[#e23636]/90">
+              Vault.wasm not found on this host yet. After the next deploy that includes
+              frontend/wasm/Vault.wasm, install from the dashboard works on testnet for real
+              (up to ~500 CSPR payment).
+            </p>
+          ) : (
+            <p className="mt-3 font-mono text-[10px] leading-relaxed text-[#666]">
+              WASM ready. Deploy submits a real casper-test install (~500 CSPR max payment).
+              Fund the wallet first. Demo path without re-install: authorize + revoke against
+              the configured package.
+            </p>
+          )}
+
           {deploy.deployerHashes.vault ? (
             <p className="mt-2 font-mono text-[10px] text-[#888]">
-              Account Vault hash: {deploy.deployerHashes.vault.slice(0, 18)}...
+              Account Vault named key: {deploy.deployerHashes.vault.slice(0, 18)}...
             </p>
           ) : null}
         </PanelCard>

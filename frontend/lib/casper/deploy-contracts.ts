@@ -22,7 +22,11 @@ import { createRpcClient } from "@/lib/casper/rpc";
 
 const REPO_ROOT = join(process.cwd(), "..");
 const CONTRACTS_DIR = join(REPO_ROOT, "contracts", "agentvault-core");
-const WASM_DIR = join(CONTRACTS_DIR, "wasm");
+// Prefer frontend/wasm (committed, available on Vercel). Fall back to monorepo contracts/wasm for local builds.
+const WASM_SEARCH_DIRS = [
+  join(process.cwd(), "wasm"),
+  join(CONTRACTS_DIR, "wasm"),
+];
 const CONTRACTS_TOML = join(CONTRACTS_DIR, "resources", "casper-test-contracts.toml");
 const ENV_LOCAL = join(process.cwd(), ".env.local");
 const CONFIG_TS = join(process.cwd(), "lib", "casper", "contract-config.ts");
@@ -39,11 +43,24 @@ const ODRA_ARGS = {
 
 export type DeployContractName = "Escrow" | "Attestation" | "Vault";
 
+function resolveWasmFile(name: DeployContractName): string | null {
+  for (const dir of WASM_SEARCH_DIRS) {
+    const file = join(dir, `${name}.wasm`);
+    if (existsSync(file)) return file;
+  }
+  return null;
+}
+
+export function hasWasmArtifact(name: DeployContractName): boolean {
+  return resolveWasmFile(name) !== null;
+}
+
 function wasmPath(name: DeployContractName): string {
-  const file = join(WASM_DIR, `${name}.wasm`);
-  if (!existsSync(file)) {
+  const file = resolveWasmFile(name);
+  if (!file) {
     throw new Error(
-      `Missing ${name}.wasm. Run contracts/agentvault-core/scripts/build-windows.ps1 first.`,
+      `Missing ${name}.wasm. Expected at frontend/wasm/${name}.wasm (production) ` +
+        `or contracts/agentvault-core/wasm/${name}.wasm (local build via build-windows.ps1).`,
     );
   }
   return file;
@@ -237,5 +254,13 @@ export function getConfiguredHashes() {
     escrow: ESCROW_PACKAGE_HASH,
     attestation: ATTESTATION_PACKAGE_HASH,
     vault: VAULT_PACKAGE_HASH,
+  };
+}
+
+export function getWasmAvailability() {
+  return {
+    Escrow: hasWasmArtifact("Escrow"),
+    Attestation: hasWasmArtifact("Attestation"),
+    Vault: hasWasmArtifact("Vault"),
   };
 }
