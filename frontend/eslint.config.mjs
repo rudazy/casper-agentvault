@@ -12,7 +12,19 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Node CLI helpers (not part of the Next app bundle)
+    "scripts/**",
+    "wasm/**",
+    "public/wasm/**",
+    // Built agent package copied into the app
+    "lib/agents/runtime/**",
   ]),
+  {
+    rules: {
+      // Async data loads and one-shot connect setup legitimately set state from effects.
+      "react-hooks/set-state-in-effect": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;

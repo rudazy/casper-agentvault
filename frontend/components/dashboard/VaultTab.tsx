@@ -12,7 +12,7 @@ import {
 } from "@/components/dashboard/shared";
 import type { TabAction, TabPanelProps } from "@/components/dashboard/types";
 import type { useContractDeploy } from "@/hooks/useContractDeploy";
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 
 type ContractDeploy = ReturnType<typeof useContractDeploy>;
 
@@ -59,20 +59,15 @@ export function VaultTab({
   deploy,
 }: TabPanelProps & { deploy?: ContractDeploy }) {
   const [depositAmount, setDepositAmount] = useState("2");
-  const [agentPublicKey, setAgentPublicKey] = useState("");
+  // null = follow connected wallet (one-wallet demo); string = user override
+  const [agentPublicKeyOverride, setAgentPublicKeyOverride] = useState<string | null>(null);
   const [spendCapCspr, setSpendCapCspr] = useState("10");
   const [expiresInDays, setExpiresInDays] = useState("7");
   const [transferAmount, setTransferAmount] = useState("1");
   const [recipientPublicKey, setRecipientPublicKey] = useState("");
   const [formError, setFormError] = useState("");
 
-  // Single-wallet demo/judge path: agent = connected key so the same account
-  // can authorize (as owner) and agent_transfer (as agent) without a second key.
-  useEffect(() => {
-    if (publicKey && !agentPublicKey.trim()) {
-      setAgentPublicKey(publicKey);
-    }
-  }, [publicKey, agentPublicKey]);
+  const agentPublicKey = agentPublicKeyOverride ?? publicKey ?? "";
 
   const tabActivity = recentActivity
     .filter((e) => e.actionId.startsWith("vault_"))
@@ -104,11 +99,6 @@ export function VaultTab({
     ? `https://testnet.cspr.live/contract-package/${configuredVault.replace(/^hash-/, "")}`
     : null;
 
-  const agentReady = useMemo(
-    () => agentPublicKey.trim().length >= 16,
-    [agentPublicKey],
-  );
-
   const handleAuthorize = async () => {
     // Single-wallet / any-judge path: always authorize the connected account as agent.
     const agent = (publicKey ?? agentPublicKey).trim();
@@ -120,7 +110,7 @@ export function VaultTab({
       setFormError("Spend cap must be a positive CSPR amount.");
       return;
     }
-    setAgentPublicKey(agent);
+    setAgentPublicKeyOverride(agent);
     setFormError("");
     await runAction("vault_authorize", {
       agentPublicKey: agent,
@@ -159,7 +149,7 @@ export function VaultTab({
       setFormError("Connect a wallet to revoke (revokes the connected key's policy).");
       return;
     }
-    setAgentPublicKey(agent);
+    setAgentPublicKeyOverride(agent);
     setFormError("");
     await runAction("vault_revoke", { agentPublicKey: agent });
   };
@@ -324,16 +314,16 @@ export function VaultTab({
               label="Agent public key"
               id="vault-agent-key"
               value={agentPublicKey}
-              onChange={setAgentPublicKey}
+              onChange={setAgentPublicKeyOverride}
               placeholder="Connected wallet hex (default for single-wallet demo)"
-              hint="Must match the wallet that will sign Agent spend. Pre-filled with your connected key for the standard demo."
+              hint="Must match the wallet that will sign Agent spend. Defaults to your connected key for the standard demo."
               disabled={anyBusy}
             />
             {publicKey ? (
               <button
                 type="button"
                 disabled={anyBusy}
-                onClick={() => setAgentPublicKey(publicKey)}
+                onClick={() => setAgentPublicKeyOverride(publicKey)}
                 className="font-mono text-[10px] uppercase tracking-wider text-[#c8f135] transition hover:opacity-80 disabled:opacity-50"
               >
                 Use connected wallet as agent

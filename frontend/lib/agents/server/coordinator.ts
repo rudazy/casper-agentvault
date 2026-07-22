@@ -31,15 +31,16 @@ function resolveModule(actionId: ContractActionId): AgentModule | null {
 }
 
 class MockAgentCoordinator implements CoordinatorLike {
-  async dispatchByAction(actionId: ContractActionId, _options: AgentDispatchOptions = {}) {
-    const module = resolveModule(actionId);
-    if (!module) {
+  async dispatchByAction(actionId: ContractActionId, options?: AgentDispatchOptions) {
+    void options;
+    const resolvedModule = resolveModule(actionId);
+    if (!resolvedModule) {
       throw new Error(`No module registered for action "${actionId}".`);
     }
 
     return {
       agent: "mock-coordinator",
-      module,
+      module: resolvedModule,
       actionId,
       usedLlm: false,
       recommendation: {

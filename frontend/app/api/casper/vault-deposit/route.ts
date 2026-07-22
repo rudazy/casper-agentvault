@@ -4,10 +4,8 @@ import { buildOdraProxyCallArgs } from "@casper-ecosystem/odra-js-client";
 import {
   Args,
   CasperNetwork,
-  HttpHandler,
   KeyAlgorithm,
   PrivateKey,
-  RpcClient,
   SessionBuilder,
 } from "casper-js-sdk";
 import {
