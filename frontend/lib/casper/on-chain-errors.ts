@@ -1,6 +1,14 @@
 export function humanizeOnChainError(message: string): string {
   const normalized = message.trim();
 
+  if (/413|payload too large/i.test(normalized)) {
+    return (
+      "Transaction payload too large for this path. Vault deposit now builds in the browser " +
+      "from /wasm/proxy_caller_with_return.wasm — hard-refresh after deploy. Use a modest " +
+      "deposit amount (e.g. 2–5 CSPR); keep ~100 CSPR free for session payment gas."
+    );
+  }
+
   if (/invalid context/i.test(normalized)) {
     return (
       "The deployed Escrow contract does not expose post_job yet (Odra init is deploy-only). " +

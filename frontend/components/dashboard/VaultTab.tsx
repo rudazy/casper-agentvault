@@ -58,7 +58,7 @@ export function VaultTab({
   recentActivity,
   deploy,
 }: TabPanelProps & { deploy?: ContractDeploy }) {
-  const [depositAmount, setDepositAmount] = useState("5");
+  const [depositAmount, setDepositAmount] = useState("2");
   const [agentPublicKey, setAgentPublicKey] = useState("");
   const [spendCapCspr, setSpendCapCspr] = useState("10");
   const [expiresInDays, setExpiresInDays] = useState("7");

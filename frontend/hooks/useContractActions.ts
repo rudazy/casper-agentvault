@@ -5,6 +5,7 @@ import type { ActivityEntry } from "@/components/dashboard/types";
 import { queryAgent, toAgentInsight } from "@/lib/agents/client";
 import type { AgentInsight } from "@/lib/agents/types";
 import { requestActionBuild } from "@/lib/casper/actions-client";
+import { buildVaultDepositClient } from "@/lib/casper/build-vault-deposit-client";
 import type { ContractActionId } from "@/lib/casper/contract-action-types";
 import { humanizeOnChainError } from "@/lib/casper/on-chain-errors";
 import {
@@ -132,45 +133,72 @@ export function useContractActions() {
           agent: agentInsight,
         });
 
-        const built = await requestActionBuild(actionId, publicKey, payload);
+        // Payable Vault.deposit embeds Odra proxy WASM; building server-side and
+        // returning JSON hits HTTP 413. Build that session tx in the browser instead.
+        let actionLabel = ACTION_LABELS[actionId];
+        let txPreview =
+          agentInsight?.preview ?? "Approve the transaction in your wallet.";
+        let transactionJson: Record<string, unknown>;
 
-        if (built.mode === "mock") {
-          const message = agentInsight
-            ? formatAgentMessage(agentInsight)
-            : (built.preview ?? "Action completed.");
-          const result: TxFeedback = {
-            status: "success",
-            actionLabel: built.label,
-            message,
-            agent: agentInsight,
-          };
-          setFeedback(result);
-          recordActivity(actionId, "success", message);
-          return;
-        }
+        if (actionId === "vault_deposit") {
+          const depositBuilt = await buildVaultDepositClient(publicKey, payload);
+          actionLabel = depositBuilt.label;
+          txPreview = agentInsight?.preview ?? depositBuilt.preview;
+          const raw = depositBuilt.transaction.toJSON();
+          transactionJson =
+            typeof raw === "string"
+              ? (JSON.parse(raw) as Record<string, unknown>)
+              : (raw as Record<string, unknown>);
+        } else {
+          const built = await requestActionBuild(actionId, publicKey, payload);
 
-        if (built.mode === "rpc") {
-          const balance = built.balance ?? "0.0000 CSPR";
-          setLastBalance(balance);
-          const suffix = `(Live balance: ${balance})`;
-          const message = agentInsight
-            ? formatAgentMessage(agentInsight, suffix)
-            : `Live balance: ${balance}`;
-          const result: TxFeedback = {
-            status: "success",
-            actionLabel: built.label,
-            message,
-            agent: agentInsight,
-          };
-          setFeedback(result);
-          recordActivity(actionId, "success", message);
-          return;
+          if (built.mode === "mock") {
+            const message = agentInsight
+              ? formatAgentMessage(agentInsight)
+              : (built.preview ?? "Action completed.");
+            const result: TxFeedback = {
+              status: "success",
+              actionLabel: built.label,
+              message,
+              agent: agentInsight,
+            };
+            setFeedback(result);
+            recordActivity(actionId, "success", message);
+            return;
+          }
+
+          if (built.mode === "rpc") {
+            const balance = built.balance ?? "0.0000 CSPR";
+            setLastBalance(balance);
+            const suffix = `(Live balance: ${balance})`;
+            const message = agentInsight
+              ? formatAgentMessage(agentInsight, suffix)
+              : `Live balance: ${balance}`;
+            const result: TxFeedback = {
+              status: "success",
+              actionLabel: built.label,
+              message,
+              agent: agentInsight,
+            };
+            setFeedback(result);
+            recordActivity(actionId, "success", message);
+            return;
+          }
+
+          if (!built.transaction) {
+            throw new Error("Transaction was not built.");
+          }
+
+          actionLabel = built.label;
+          txPreview =
+            agentInsight?.preview ?? built.preview ?? "Approve the transaction in your wallet.";
+          transactionJson = built.transaction;
         }
 
         if (!clickRef) {
           const result: TxFeedback = {
             status: "error",
-            actionLabel: built.label,
+            actionLabel,
             message: "CSPR.click is not ready. Refresh and try again.",
             agent: agentInsight,
           };
@@ -179,29 +207,22 @@ export function useContractActions() {
           return;
         }
 
-        if (!built.transaction) {
-          throw new Error("Transaction was not built.");
-        }
-
-        const txPreview =
-          agentInsight?.preview ?? built.preview ?? "Approve the transaction in your wallet.";
-
         setFeedback({
           status: "signing",
-          actionLabel: built.label,
+          actionLabel,
           message: `${txPreview} Approve in Casper Wallet. Testnet confirmation takes ~1–2 minutes.`,
           agent: agentInsight,
         });
 
         const chainName = clickRef.chainName ?? "casper-test";
-        const signPayload = { ...built.transaction, chain_name: chainName };
+        const signPayload = { ...transactionJson, chain_name: chainName };
 
         const signResult = await clickRef.sign(signPayload, publicKey);
 
         if (!signResult) {
           const fb: TxFeedback = {
             status: "error",
-            actionLabel: built.label,
+            actionLabel,
             message:
               "No response from wallet. Unlock Casper Wallet, approve the prompt, and try again.",
             agent: agentInsight,
@@ -214,7 +235,7 @@ export function useContractActions() {
         if (signResult.cancelled) {
           const fb: TxFeedback = {
             status: "error",
-            actionLabel: built.label,
+            actionLabel,
             message: "Transaction cancelled in wallet.",
             agent: agentInsight,
           };
@@ -226,8 +247,8 @@ export function useContractActions() {
         if (signResult.error) {
           const fb: TxFeedback = {
             status: "error",
-            actionLabel: built.label,
-            message: String(signResult.error),
+            actionLabel,
+            message: humanizeOnChainError(String(signResult.error)),
             agent: agentInsight,
           };
           setFeedback(fb);
@@ -242,7 +263,7 @@ export function useContractActions() {
 
         setFeedback({
           status: "signing",
-          actionLabel: built.label,
+          actionLabel,
           message: "Signed. Broadcasting to casper-test...",
           agent: agentInsight,
         });
@@ -253,7 +274,7 @@ export function useContractActions() {
 
         setFeedback({
           status: "signing",
-          actionLabel: built.label,
+          actionLabel,
           message: `Submitted ${shortenHash(transactionHash)}. Waiting for finalization (~1–2 min on testnet)...`,
           transactionHash,
           agent: agentInsight,
@@ -264,7 +285,7 @@ export function useContractActions() {
         if (confirmation.state === "failed") {
           const fb: TxFeedback = {
             status: "error",
-            actionLabel: built.label,
+            actionLabel,
             message: humanizeOnChainError(
               confirmation.errorMessage ?? "Transaction failed on-chain.",
             ),
@@ -279,7 +300,7 @@ export function useContractActions() {
         if (confirmation.state === "pending") {
           const fb: TxFeedback = {
             status: "error",
-            actionLabel: built.label,
+            actionLabel,
             message:
               "Transaction was submitted but did not finalize in time. Check testnet.cspr.live for status.",
             transactionHash,
@@ -292,7 +313,7 @@ export function useContractActions() {
 
         const fb: TxFeedback = {
           status: "success",
-          actionLabel: built.label,
+          actionLabel,
           message: agentInsight
             ? formatAgentMessage(agentInsight, `Confirmed on ${chainName}.`)
             : `Confirmed on ${chainName}.`,
