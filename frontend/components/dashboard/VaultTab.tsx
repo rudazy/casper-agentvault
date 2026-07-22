@@ -58,7 +58,8 @@ export function VaultTab({
   recentActivity,
   deploy,
 }: TabPanelProps & { deploy?: ContractDeploy }) {
-  const [depositAmount, setDepositAmount] = useState("2");
+  // Casper min native transfer is 2.5 CSPR — fund path uses purse transfer.
+  const [depositAmount, setDepositAmount] = useState("3");
   // null = follow connected wallet (one-wallet demo); string = user override
   const [agentPublicKeyOverride, setAgentPublicKeyOverride] = useState<string | null>(null);
   const [spendCapCspr, setSpendCapCspr] = useState("10");

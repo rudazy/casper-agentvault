@@ -1,44 +1,30 @@
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
-import { buildOdraProxyCallArgs } from "@casper-ecosystem/odra-js-client";
 import {
-  Args,
   CasperNetwork,
-  SessionBuilder,
 } from "casper-js-sdk";
 import {
-  CASPER_CHAIN_NAME,
-  VAULT_PACKAGE_HASH,
   hasVaultContract,
-  normalizePackageHash,
 } from "@/lib/casper/contract-config";
 import { loadOperatorPrivateKey } from "@/lib/casper/operator-pem";
-import { createPutRpcClient, getCasperPutRpcUrl } from "@/lib/casper/rpc";
+import { createPutRpcClient, createRpcClient } from "@/lib/casper/rpc";
+import {
+  MIN_TRANSFER_MOTES,
+  buildVaultPurseFundTransaction,
+  putVaultFundTransaction,
+  resolveVaultMainPurseUref,
+} from "@/lib/casper/vault-purse";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
-/** Session payment for Odra proxy (motes). 5 CSPR is too low (out of gas). */
-const PROXY_PAYMENT = 100_000_000_000;
 const MAX_DEPOSIT_CSPR = 20;
+/** Casper min transfer is 2.5 CSPR — default deposit must meet it. */
+const DEFAULT_DEPOSIT_CSPR = "3";
 
-function resolveProxyWasm(): Uint8Array {
-  const candidates = [
-    join(process.cwd(), "wasm", "proxy_caller_with_return.wasm"),
-    join(process.cwd(), "public", "wasm", "proxy_caller_with_return.wasm"),
-    join(process.cwd(), "frontend", "wasm", "proxy_caller_with_return.wasm"),
-    join(process.cwd(), "frontend", "public", "wasm", "proxy_caller_with_return.wasm"),
-    join(__dirname, "..", "..", "..", "wasm", "proxy_caller_with_return.wasm"),
-    join(__dirname, "..", "..", "..", "public", "wasm", "proxy_caller_with_return.wasm"),
-  ];
-  for (const path of candidates) {
-    if (existsSync(path)) return new Uint8Array(readFileSync(path));
-  }
-  throw new Error("Missing proxy_caller_with_return.wasm on server.");
-}
-
-function csprToMotes(amount: unknown, fallback = "2"): string {
-  const raw = typeof amount === "string" || typeof amount === "number" ? String(amount) : fallback;
+function csprToMotes(amount: unknown, fallback = DEFAULT_DEPOSIT_CSPR): string {
+  const raw =
+    typeof amount === "string" || typeof amount === "number"
+      ? String(amount)
+      : fallback;
   const cspr = Number(raw);
   if (!Number.isFinite(cspr) || cspr <= 0) {
     return String(Math.round(Number(fallback) * 1_000_000_000));
@@ -48,10 +34,13 @@ function csprToMotes(amount: unknown, fallback = "2"): string {
 }
 
 /**
- * Owner-operated payable deposit.
- * CSPR.click rejects large session+WASM sign payloads (HTTP 413). This route
- * signs the Odra proxy session with the package operator key and broadcasts
- * directly to casper-test — only when the connected publicKey matches the operator.
+ * Owner-operated vault fund.
+ *
+ * Avoids Odra payable proxy session WASM (~370KB JSON) which CSPR.click and
+ * Vercel→RPC paths reject with HTTP 413. Instead: native transfer into the
+ * contract `__contract_main_purse` (vault_balance = self_balance).
+ *
+ * Requires CASPER_VAULT_OPERATOR_PEM matching the connected wallet.
  */
 export async function POST(request: Request) {
   try {
@@ -94,7 +83,7 @@ export async function POST(request: Request) {
           error:
             "Deposit via server is only available for the Vault package owner key. " +
             "Connected wallet is not the operator. Install your own Vault package " +
-            "or connect the owner wallet. (CSPR.click cannot sign large payable session txs.)",
+            "or connect the owner wallet.",
           code: "NOT_OPERATOR",
           operatorPublicKeyPrefix: `${operatorHex.slice(0, 12)}...`,
         },
@@ -102,26 +91,22 @@ export async function POST(request: Request) {
       );
     }
 
-    const amountMotes = csprToMotes(body.amountCspr, "2");
-    let proxyWasm: Uint8Array;
+    let amountMotes = csprToMotes(body.amountCspr, DEFAULT_DEPOSIT_CSPR);
+    if (BigInt(amountMotes) < BigInt(MIN_TRANSFER_MOTES)) {
+      // Bump silently to network minimum so UI "2" still funds.
+      amountMotes = String(MIN_TRANSFER_MOTES);
+    }
+
+    const queryRpc = createRpcClient();
+    let purse;
     try {
-      proxyWasm = resolveProxyWasm();
+      purse = await resolveVaultMainPurseUref(queryRpc);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       return NextResponse.json(
         {
-          error: `${msg} cwd=${process.cwd()}`,
-          code: "PROXY_WASM_MISSING",
-        },
-        { status: 500 },
-      );
-    }
-
-    if (proxyWasm.byteLength < 1000) {
-      return NextResponse.json(
-        {
-          error: `Proxy WASM looks corrupt (size=${proxyWasm.byteLength}).`,
-          code: "PROXY_WASM_INVALID",
+          error: `Could not resolve Vault main purse: ${msg}`,
+          code: "VAULT_PURSE_MISSING",
         },
         { status: 500 },
       );
@@ -129,75 +114,39 @@ export async function POST(request: Request) {
 
     let transaction;
     try {
-      const outerArgs = buildOdraProxyCallArgs(
-        normalizePackageHash(VAULT_PACKAGE_HASH),
-        "deposit",
-        Args.fromMap({}),
-        amountMotes,
-      );
-
-      transaction = new SessionBuilder()
-        .from(operator.publicKey)
-        .wasm(proxyWasm)
-        .runtimeArgs(outerArgs)
-        .chainName(CASPER_CHAIN_NAME)
-        .ttl(1_800_000)
-        .payment(PROXY_PAYMENT, 1)
-        .build();
-
-      transaction.sign(operator);
+      transaction = buildVaultPurseFundTransaction(operator, purse, amountMotes);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       return NextResponse.json(
         {
-          error: `Failed to build/sign payable deposit session: ${msg}`,
-          code: "SESSION_BUILD_FAILED",
-          hint:
-            "Usually a casper-js-sdk bundling issue. Ensure serverExternalPackages includes casper-js-sdk.",
+          error: `Failed to build vault fund transfer: ${msg}`,
+          code: "TRANSFER_BUILD_FAILED",
         },
         { status: 500 },
       );
     }
 
-    // Large proxy session (~370KB JSON). Must not use CSPR.cloud (HTTP 413).
-    const putRpcUrl = getCasperPutRpcUrl();
     const network = await CasperNetwork.create(createPutRpcClient());
-    let result;
+    let transactionHash: string;
     try {
-      result = await network.putTransaction(transaction);
+      transactionHash = await putVaultFundTransaction(network, transaction);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      const is413 = /413|payload too large/i.test(msg);
       return NextResponse.json(
         {
-          error: is413
-            ? `RPC rejected large deposit session (413). Using put RPC: ${putRpcUrl}. ` +
-              "Set CASPER_PUT_RPC_URL=https://node.testnet.casper.network/rpc " +
-              "(do not put_session via node.testnet.cspr.cloud)."
-            : `Node rejected deposit transaction: ${msg}`,
-          code: is413 ? "PUT_PAYLOAD_TOO_LARGE" : "PUT_TRANSACTION_FAILED",
-          putRpcUrl,
+          error: `Node rejected vault fund transfer: ${msg}`,
+          code: "PUT_TRANSACTION_FAILED",
         },
         { status: 502 },
       );
-    }
-    const transactionHash =
-      result && "transactionHash" in result && result.transactionHash
-        ? result.transactionHash.toHex()
-        : result && "deployHash" in result && result.deployHash
-          ? result.deployHash.toHex()
-          : null;
-
-    if (!transactionHash) {
-      throw new Error("Node accepted deposit but returned no transaction hash.");
     }
 
     const cspr = (Number(amountMotes) / 1_000_000_000).toFixed(2);
     return NextResponse.json({
       transactionHash,
       amountCspr: cspr,
-      mode: "operator_session",
-      preview: `Vault.deposit() ${cspr} CSPR via server-signed Odra proxy (owner only)`,
+      mode: "operator_purse_transfer",
+      preview: `Funded Vault main purse with ${cspr} CSPR (native transfer — vault_balance increases)`,
     });
   } catch (error) {
     const message =

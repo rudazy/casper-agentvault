@@ -41,6 +41,7 @@ export async function queryTransactionState(hash: string): Promise<{
   errorMessage?: string;
 }> {
   const network = await getNetwork();
+  const rpc = createRpcClient();
 
   try {
     const info = await network.getTransaction(hash);
@@ -57,6 +58,45 @@ export async function queryTransactionState(hash: string): Promise<{
 
     return { state: "success" };
   } catch {
-    return { state: "pending" };
+    // Native purse fund path returns a legacy deploy hash — poll getDeploy.
+    try {
+      const deployInfo = await rpc.getDeploy(hash);
+      const executionInfo =
+        (deployInfo as { executionInfo?: { executionResult?: { errorMessage?: string } } })
+          ?.executionInfo ??
+        (
+          deployInfo as {
+            rawJSON?: {
+              execution_info?: {
+                execution_result?: { error_message?: string; Success?: unknown; Failure?: unknown };
+              };
+            };
+          }
+        )?.rawJSON?.execution_info;
+
+      if (!executionInfo) {
+        return { state: "pending" };
+      }
+
+      const er =
+        (executionInfo as { executionResult?: { errorMessage?: string } }).executionResult ??
+        (executionInfo as { execution_result?: { error_message?: string } }).execution_result;
+
+      const errorMessage =
+        er && "errorMessage" in er
+          ? er.errorMessage
+          : er && "error_message" in er
+            ? er.error_message
+            : undefined;
+
+      if (errorMessage) {
+        return { state: "failed", errorMessage };
+      }
+
+      // Deploy present with execution result and no error → success.
+      return { state: "success" };
+    } catch {
+      return { state: "pending" };
+    }
   }
 }
