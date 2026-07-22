@@ -13,7 +13,7 @@ import {
   normalizePackageHash,
 } from "@/lib/casper/contract-config";
 import { loadOperatorPrivateKey } from "@/lib/casper/operator-pem";
-import { createRpcClient } from "@/lib/casper/rpc";
+import { createPutRpcClient, getCasperPutRpcUrl } from "@/lib/casper/rpc";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -159,17 +159,24 @@ export async function POST(request: Request) {
       );
     }
 
-    const rpc = createRpcClient();
-    const network = await CasperNetwork.create(rpc);
+    // Large proxy session (~370KB JSON). Must not use CSPR.cloud (HTTP 413).
+    const putRpcUrl = getCasperPutRpcUrl();
+    const network = await CasperNetwork.create(createPutRpcClient());
     let result;
     try {
       result = await network.putTransaction(transaction);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
+      const is413 = /413|payload too large/i.test(msg);
       return NextResponse.json(
         {
-          error: `Node rejected deposit transaction: ${msg}`,
-          code: "PUT_TRANSACTION_FAILED",
+          error: is413
+            ? `RPC rejected large deposit session (413). Using put RPC: ${putRpcUrl}. ` +
+              "Set CASPER_PUT_RPC_URL=https://node.testnet.casper.network/rpc " +
+              "(do not put_session via node.testnet.cspr.cloud)."
+            : `Node rejected deposit transaction: ${msg}`,
+          code: is413 ? "PUT_PAYLOAD_TOO_LARGE" : "PUT_TRANSACTION_FAILED",
+          putRpcUrl,
         },
         { status: 502 },
       );

@@ -11,11 +11,12 @@ export function humanizeOnChainError(message: string): string {
     );
   }
 
-  if (/413|payload too large/i.test(normalized)) {
+  if (/413|payload too large|PUT_PAYLOAD_TOO_LARGE/i.test(normalized)) {
     return (
-      "Transaction payload too large for this path. Vault deposit now builds in the browser " +
-      "from /wasm/proxy_caller_with_return.wasm — hard-refresh after deploy. Use a modest " +
-      "deposit amount (e.g. 2–5 CSPR); keep ~100 CSPR free for session payment gas."
+      "RPC rejected the payable deposit session (payload too large). " +
+      "Deposit must be put via https://node.testnet.casper.network/rpc — not CSPR.cloud. " +
+      "On Vercel set CASPER_PUT_RPC_URL=https://node.testnet.casper.network/rpc and redeploy. " +
+      "Owner wallet + CASPER_VAULT_OPERATOR_PEM still required."
     );
   }
 
