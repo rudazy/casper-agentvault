@@ -398,8 +398,9 @@ export function useContractActions() {
         setFeedback(fb);
         recordActivity(actionId, "success", fb.message, transactionHash);
       } catch (error) {
-        const message =
+        const raw =
           error instanceof Error ? error.message : "Action failed unexpectedly.";
+        const message = humanizeOnChainError(raw);
         setFeedback({ status: "error", message, agent: agentInsight });
         recordActivity(actionId, "error", message);
       } finally {

@@ -4,8 +4,6 @@ import { buildOdraProxyCallArgs } from "@casper-ecosystem/odra-js-client";
 import {
   Args,
   CasperNetwork,
-  KeyAlgorithm,
-  PrivateKey,
   SessionBuilder,
 } from "casper-js-sdk";
 import {
@@ -14,6 +12,7 @@ import {
   hasVaultContract,
   normalizePackageHash,
 } from "@/lib/casper/contract-config";
+import { loadOperatorPrivateKey } from "@/lib/casper/operator-pem";
 import { createRpcClient } from "@/lib/casper/rpc";
 import { NextResponse } from "next/server";
 
@@ -22,31 +21,6 @@ export const runtime = "nodejs";
 /** Session payment for Odra proxy (motes). 5 CSPR is too low (out of gas). */
 const PROXY_PAYMENT = 100_000_000_000;
 const MAX_DEPOSIT_CSPR = 20;
-
-function loadOperatorKey(): PrivateKey | null {
-  // Prefer env (Vercel secret). Fallback to local gitignored pem for operator demos.
-  const fromEnv = process.env.CASPER_VAULT_OPERATOR_PEM?.replace(/\\n/g, "\n")?.trim();
-  if (fromEnv?.includes("PRIVATE KEY")) {
-    const alg = fromEnv.includes("EC PRIVATE KEY")
-      ? KeyAlgorithm.SECP256K1
-      : KeyAlgorithm.ED25519;
-    return PrivateKey.fromPem(fromEnv, alg);
-  }
-
-  const candidates = [
-    join(process.cwd(), "..", "contracts", "agentvault-core", "secret_key.pem"),
-    join(process.cwd(), "contracts", "agentvault-core", "secret_key.pem"),
-  ];
-  for (const path of candidates) {
-    if (!existsSync(path)) continue;
-    const pem = readFileSync(path, "utf8");
-    const alg = pem.includes("EC PRIVATE KEY")
-      ? KeyAlgorithm.SECP256K1
-      : KeyAlgorithm.ED25519;
-    return PrivateKey.fromPem(pem, alg);
-  }
-  return null;
-}
 
 function resolveProxyWasm(): Uint8Array {
   const candidates = [
@@ -97,19 +71,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing publicKey." }, { status: 400 });
     }
 
-    const operator = loadOperatorKey();
-    if (!operator) {
+    const operatorLoad = loadOperatorPrivateKey();
+    if (!operatorLoad.ok) {
       return NextResponse.json(
         {
-          error:
-            "Server operator key not configured. Set CASPER_VAULT_OPERATOR_PEM " +
-            "(same key that owns the Vault package) for wallet-friendly deposits. " +
-            "Large session deposits cannot be signed via CSPR.click (413).",
-          code: "OPERATOR_KEY_MISSING",
+          error: operatorLoad.detail,
+          code:
+            operatorLoad.reason === "invalid"
+              ? "OPERATOR_KEY_INVALID"
+              : "OPERATOR_KEY_MISSING",
         },
-        { status: 503 },
+        { status: operatorLoad.reason === "invalid" ? 500 : 503 },
       );
     }
+    const operator = operatorLoad.key;
 
     const operatorHex = operator.publicKey.toHex().toLowerCase();
     const callerHex = body.publicKey.trim().toLowerCase();

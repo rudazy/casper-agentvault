@@ -1,6 +1,16 @@
 export function humanizeOnChainError(message: string): string {
   const normalized = message.trim();
 
+  // casper-js-sdk DER/PEM parser — almost always a mangled CASPER_VAULT_OPERATOR_PEM.
+  if (/Failed to decode tag of ["']?seq["']?/i.test(normalized)) {
+    return (
+      "Operator private key could not be parsed (PEM/DER). " +
+      "On Vercel, set CASPER_VAULT_OPERATOR_PEM to the full EC/ED25519 PEM " +
+      "(BEGIN…END), with real newlines or literal \\n between lines — no quotes. " +
+      "Must match the wallet that installed the Vault package."
+    );
+  }
+
   if (/413|payload too large/i.test(normalized)) {
     return (
       "Transaction payload too large for this path. Vault deposit now builds in the browser " +
