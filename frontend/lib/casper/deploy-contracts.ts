@@ -22,9 +22,11 @@ import { createRpcClient } from "@/lib/casper/rpc";
 
 const REPO_ROOT = join(process.cwd(), "..");
 const CONTRACTS_DIR = join(REPO_ROOT, "contracts", "agentvault-core");
-// Prefer frontend/wasm (committed, available on Vercel). Fall back to monorepo contracts/wasm for local builds.
+// Prefer frontend/wasm (committed + traced into Vercel functions). Fallbacks for monorepo / alternate cwd.
 const WASM_SEARCH_DIRS = [
   join(process.cwd(), "wasm"),
+  join(process.cwd(), "frontend", "wasm"),
+  join(__dirname, "..", "..", "wasm"),
   join(CONTRACTS_DIR, "wasm"),
 ];
 const CONTRACTS_TOML = join(CONTRACTS_DIR, "resources", "casper-test-contracts.toml");

@@ -1,5 +1,13 @@
-export const CASPER_CHAIN_NAME =
-  process.env.NEXT_PUBLIC_CASPER_CHAIN_NAME ?? "casper-test";
+/** Prefer non-empty env; empty Vercel vars must not wipe testnet defaults. */
+function envHash(name: string, fallback: string): string {
+  const raw = process.env[name]?.trim() ?? "";
+  return raw.length > 0 ? raw : fallback;
+}
+
+export const CASPER_CHAIN_NAME = envHash(
+  "NEXT_PUBLIC_CASPER_CHAIN_NAME",
+  "casper-test",
+);
 
 /** Deployed on casper-test — see contracts/agentvault-core/resources/casper-test-contracts.toml */
 const CASPER_TEST_ESCROW_PACKAGE_HASH =
@@ -11,15 +19,20 @@ const CASPER_TEST_ATTESTATION_PACKAGE_HASH =
 const CASPER_TEST_VAULT_PACKAGE_HASH =
   "hash-a0217981457fc2e54a7e947f8d054fad0b2d8e61e4e20773cdea862035b3825e";
 
-export const ESCROW_PACKAGE_HASH =
-  process.env.NEXT_PUBLIC_ESCROW_PACKAGE_HASH ?? CASPER_TEST_ESCROW_PACKAGE_HASH;
+export const ESCROW_PACKAGE_HASH = envHash(
+  "NEXT_PUBLIC_ESCROW_PACKAGE_HASH",
+  CASPER_TEST_ESCROW_PACKAGE_HASH,
+);
 
-export const ATTESTATION_PACKAGE_HASH =
-  process.env.NEXT_PUBLIC_ATTESTATION_PACKAGE_HASH ??
-  CASPER_TEST_ATTESTATION_PACKAGE_HASH;
+export const ATTESTATION_PACKAGE_HASH = envHash(
+  "NEXT_PUBLIC_ATTESTATION_PACKAGE_HASH",
+  CASPER_TEST_ATTESTATION_PACKAGE_HASH,
+);
 
-export const VAULT_PACKAGE_HASH =
-  process.env.NEXT_PUBLIC_VAULT_PACKAGE_HASH ?? CASPER_TEST_VAULT_PACKAGE_HASH;
+export const VAULT_PACKAGE_HASH = envHash(
+  "NEXT_PUBLIC_VAULT_PACKAGE_HASH",
+  CASPER_TEST_VAULT_PACKAGE_HASH,
+);
 
 /** Minimum payment (motes) accepted by casper-test for contract package calls. */
 export const DEFAULT_DEPLOY_COST = 5_000_000_000;
