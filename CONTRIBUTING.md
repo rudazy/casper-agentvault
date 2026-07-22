@@ -9,7 +9,7 @@ Thanks for helping improve AgentVault. This document covers how to work on the r
 | `frontend/` | Next.js app (dashboard + docs) deployed to https://casperagent.xyz |
 | `agents/` | Multi-agent coordinator and domain agents (TypeScript) |
 | `contracts/agentvault-core/` | Odra / Rust smart contracts (Escrow, Attestation, Vault) |
-| `docs/` | Assets, judge playbook, testnet reference |
+| `docs/` | Assets, demo playbook, testnet reference |
 
 ## Prerequisites
 
@@ -50,7 +50,7 @@ Windows WASM build (optional):
 ./scripts/build-windows.ps1
 ```
 
-Do **not** redeploy testnet packages and overwrite hashes in `resources/casper-test-contracts.toml` unless the live site and docs are updated in the same change. Judges may review mid-update.
+Do **not** redeploy testnet packages and overwrite hashes in `resources/casper-test-contracts.toml` unless the live site and docs are updated in the same change.
 
 ## Coding standards
 
@@ -64,7 +64,7 @@ Do **not** redeploy testnet packages and overwrite hashes in `resources/casper-t
 1. Branch from `main`
 2. Keep the live MVP path working (dashboard + Escrow + Attestation)
 3. Include tests for contract or agent logic changes
-4. Update README / `docs/TESTNET.md` if package hashes or judge steps change
+4. Update README / `docs/TESTNET.md` / `docs/DEMO_PLAYBOOK.md` if package hashes or demo steps change
 5. Fill out the PR template
 
 ## Issues

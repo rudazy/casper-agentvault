@@ -2,8 +2,9 @@
 
 use agentvault_core::attestation::{Attestation, AttestationInitArgs};
 use agentvault_core::escrow::{Escrow, EscrowInitArgs};
+use agentvault_core::vault::Vault;
 use odra::casper_types::U512;
-use odra::host::HostEnv;
+use odra::host::{HostEnv, NoArgs};
 use odra::schema::casper_contract_schema::NamedCLType;
 use odra_cli::{
     deploy::DeployScript,
@@ -44,6 +45,8 @@ impl DeployScript for AgentVaultDeployScript {
             DEPLOY_GAS,
         )?;
 
+        Vault::load_or_deploy(env, NoArgs, container, DEPLOY_GAS)?;
+
         Ok(())
     }
 }
@@ -82,6 +85,7 @@ pub fn main() {
         .deploy(AgentVaultDeployScript)
         .contract::<Escrow>()
         .contract::<Attestation>()
+        .contract::<Vault>()
         .scenario(AgentVaultScenario)
         .build()
         .run();

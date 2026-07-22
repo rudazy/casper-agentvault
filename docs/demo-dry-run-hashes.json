@@ -1,0 +1,25 @@
+{
+  "network": "casper-test",
+  "deployer": "0202030fd41f99a8ef4b46895a7519ae7d162ee70e68f7fdf6d85874921dda0baf5c",
+  "agent": "01a0d278dd66be32338c9a59431a66ad0f923fa858385c60aa45a8e56b92ff566c",
+  "packages": {
+    "escrow": "hash-75e9a98ffc98b9e7661a40f7a2ce0dfb382c1dd156bc3781c8b187310e5809cb",
+    "attestation": "hash-25825b6d3e456ecc37eb77a15eecd8369dbfdf33c55aaf744f1a0007fe37db95",
+    "vault": "hash-a0217981457fc2e54a7e947f8d054fad0b2d8e61e4e20773cdea862035b3825e"
+  },
+  "transactions": {
+    "rwa_publish": "9029353b247f6d75823adb8f0430fefcd8fc12843a8b51cea8d740d7fe19bed3",
+    "market_post_job": "d59481844495bd0c55c9042f6fc2896c7c6e74f7da7caae6e7c3b0f5322d9826",
+    "vault_install": "4ab84e9ee5532100fc90a840660eef93597470b27ae26efeb97a512eb66783ec",
+    "vault_authorize": "f8a03591a5952fceda7c60fcaf168d60caed64ef4f300e706acdfe47d0afb3dd",
+    "vault_revoke": "d48a1b27aa5ba9f4e0f5dad63ddb72f568ec572a104bce6c9e41b9a83a1ef092"
+  },
+  "explorers": {
+    "rwa_publish": "https://testnet.cspr.live/transaction/9029353b247f6d75823adb8f0430fefcd8fc12843a8b51cea8d740d7fe19bed3",
+    "market_post_job": "https://testnet.cspr.live/transaction/d59481844495bd0c55c9042f6fc2896c7c6e74f7da7caae6e7c3b0f5322d9826",
+    "vault_install": "https://testnet.cspr.live/transaction/4ab84e9ee5532100fc90a840660eef93597470b27ae26efeb97a512eb66783ec",
+    "vault_authorize": "https://testnet.cspr.live/transaction/f8a03591a5952fceda7c60fcaf168d60caed64ef4f300e706acdfe47d0afb3dd",
+    "vault_revoke": "https://testnet.cspr.live/transaction/d48a1b27aa5ba9f4e0f5dad63ddb72f568ec572a104bce6c9e41b9a83a1ef092"
+  },
+  "recordedAt": "2026-07-22T08:29:58.073Z"
+}

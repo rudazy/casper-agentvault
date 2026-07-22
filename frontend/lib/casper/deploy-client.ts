@@ -1,4 +1,4 @@
-export type DeployContractName = "Escrow" | "Attestation";
+export type DeployContractName = "Escrow" | "Attestation" | "Vault";
 
 export interface DeployBuildResponse {
   contract: DeployContractName;
@@ -10,8 +10,13 @@ export interface DeployBuildResponse {
 
 export interface DeployStatusResponse {
   postJobSupported: boolean;
-  configured: { escrow: string; attestation: string };
-  deployer: { escrow?: string; attestation?: string; balance?: string };
+  configured: { escrow: string; attestation: string; vault: string };
+  deployer: {
+    escrow?: string;
+    attestation?: string;
+    vault?: string;
+    balance?: string;
+  };
 }
 
 export async function requestDeployBuild(
@@ -45,6 +50,7 @@ export async function fetchDeployStatus(publicKey: string): Promise<DeployStatus
 export async function syncDeployedHashes(publicKey: string): Promise<{
   escrow: string;
   attestation: string;
+  vault?: string;
   restartRequired: boolean;
 }> {
   const res = await fetch("/api/casper/deploy", {

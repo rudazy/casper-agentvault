@@ -36,6 +36,10 @@ const ACTION_LABELS: Record<ContractActionId, string> = {
   market_browse: "Browse agents",
   market_post_job: "Post a job",
   market_release: "Release escrow",
+  vault_deposit: "Deposit to vault",
+  vault_authorize: "Authorize agent",
+  vault_transfer: "Agent transfer",
+  vault_revoke: "Revoke agent",
 };
 
 function pushActivity(

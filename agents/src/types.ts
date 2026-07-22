@@ -1,4 +1,4 @@
-export type AgentModule = "guardian" | "rwa" | "marketplace";
+export type AgentModule = "guardian" | "rwa" | "marketplace" | "vault";
 
 export type ContractActionId =
   | "guardian_scan"
@@ -9,7 +9,11 @@ export type ContractActionId =
   | "rwa_publish"
   | "market_browse"
   | "market_post_job"
-  | "market_release";
+  | "market_release"
+  | "vault_deposit"
+  | "vault_authorize"
+  | "vault_transfer"
+  | "vault_revoke";
 
 export type ActionMode = "mock" | "rpc" | "transaction" | "advisory";
 

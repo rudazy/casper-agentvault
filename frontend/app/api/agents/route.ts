@@ -14,6 +14,10 @@ const VALID_ACTIONS: ContractActionId[] = [
   "market_browse",
   "market_post_job",
   "market_release",
+  "vault_deposit",
+  "vault_authorize",
+  "vault_transfer",
+  "vault_revoke",
 ];
 
 function isActionId(value: unknown): value is ContractActionId {

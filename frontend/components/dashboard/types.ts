@@ -1,7 +1,7 @@
 import type { ContractActionId } from "@/lib/casper/contract-action-types";
 import type { TxFeedback, TxStatus } from "@/hooks/useContractActions";
 
-export type TabId = "guardian" | "rwa" | "marketplace";
+export type TabId = "guardian" | "rwa" | "marketplace" | "vault";
 
 export interface TabAction {
   id: ContractActionId;

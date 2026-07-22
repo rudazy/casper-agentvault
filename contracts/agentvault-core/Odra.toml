@@ -3,3 +3,6 @@ fqn = "escrow::Escrow"
 
 [[contracts]]
 fqn = "attestation::Attestation"
+
+[[contracts]]
+fqn = "vault::Vault"

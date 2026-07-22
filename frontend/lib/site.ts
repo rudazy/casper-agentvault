@@ -9,4 +9,4 @@ export const SITE_TAGLINE =
   "Autonomous operating system for on-chain AI agents";
 
 export const SITE_DESCRIPTION =
-  "AgentVault is the OS layer for autonomous agents on Casper — Finance, Compliance, and Commerce applications share one wallet, agent coordinator, and on-chain settlement.";
+  "AgentVault is the OS layer for autonomous agents on Casper — Finance, Compliance, Commerce, and Session Vault share one wallet, multi-agent coordinator, and on-chain settlement.";

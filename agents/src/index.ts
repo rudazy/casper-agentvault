@@ -6,6 +6,7 @@ import type { AgentModule, ContractActionId } from "./types.js";
 export { guardianAgent, GuardianAgent } from "./guardian-agent.js";
 export { rwaAgent, RwaAgent } from "./rwa-agent.js";
 export { marketplaceAgent, MarketplaceAgent } from "./marketplace-agent.js";
+export { vaultAgent, VaultAgent } from "./vault-agent.js";
 export { coordinator, AgentCoordinator } from "./coordinator.js";
 export type {
   AgentHandler,

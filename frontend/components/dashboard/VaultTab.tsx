@@ -1,0 +1,358 @@
+"use client";
+
+import { ModuleActionBar } from "@/components/dashboard/ModuleActionBar";
+import { TransactionFeedback } from "@/components/dashboard/TransactionFeedback";
+import {
+  ActivityTimeline,
+  formatActivityTime,
+  FormField,
+  PanelCard,
+  StatCard,
+  StatusBadge,
+} from "@/components/dashboard/shared";
+import type { TabAction, TabPanelProps } from "@/components/dashboard/types";
+import type { useContractDeploy } from "@/hooks/useContractDeploy";
+import { useMemo, useState } from "react";
+
+type ContractDeploy = ReturnType<typeof useContractDeploy>;
+
+const ACTIONS: TabAction[] = [
+  { id: "vault_deposit", label: "Deposit", hint: "Fund vault with CSPR" },
+  {
+    id: "vault_authorize",
+    label: "Authorize agent",
+    hint: "Bounded session key",
+    primary: true,
+  },
+  { id: "vault_transfer", label: "Agent spend", hint: "Policy-gated transfer" },
+  { id: "vault_revoke", label: "Revoke", hint: "Panic-button revoke" },
+];
+
+const POLICY_FEATURES = [
+  {
+    title: "Spend cap",
+    detail: "Hard ceiling per rolling time window (motes)",
+  },
+  {
+    title: "Action bitmask",
+    detail: "Bit 0 = transfer; higher bits reserved",
+  },
+  {
+    title: "Session expiry",
+    detail: "Absolute block-time deadline; expired keys fail closed",
+  },
+  {
+    title: "Idempotent revoke",
+    detail: "Owner panic button never fails on double revoke",
+  },
+];
+
+export function VaultTab({
+  accent,
+  connected,
+  publicKey,
+  runAction,
+  feedback,
+  busyAction,
+  clearFeedback,
+  recentActivity,
+  deploy,
+}: TabPanelProps & { deploy?: ContractDeploy }) {
+  const [depositAmount, setDepositAmount] = useState("5");
+  const [agentPublicKey, setAgentPublicKey] = useState("");
+  const [spendCapCspr, setSpendCapCspr] = useState("10");
+  const [expiresInDays, setExpiresInDays] = useState("7");
+  const [transferAmount, setTransferAmount] = useState("1");
+  const [recipientPublicKey, setRecipientPublicKey] = useState("");
+  const [formError, setFormError] = useState("");
+
+  const tabActivity = recentActivity
+    .filter((e) => e.actionId.startsWith("vault_"))
+    .slice(0, 4)
+    .map((e) => ({
+      label: e.label,
+      message: e.message,
+      status: e.status,
+      time: formatActivityTime(e.timestamp),
+    }));
+
+  const deployBusy = deploy?.busyContract != null;
+  const anyBusy = busyAction !== null || deployBusy;
+  const vaultHashPresent = Boolean(deploy?.deployerHashes.vault);
+  const canSyncVault =
+    Boolean(deploy?.deployerHashes.escrow) &&
+    Boolean(deploy?.deployerHashes.attestation) &&
+    vaultHashPresent;
+
+  const agentReady = useMemo(
+    () => agentPublicKey.trim().length >= 16,
+    [agentPublicKey],
+  );
+
+  const handleAuthorize = async () => {
+    if (!agentReady) {
+      setFormError("Enter the agent account public key (hex, 16+ chars).");
+      return;
+    }
+    if (!(Number(spendCapCspr) > 0)) {
+      setFormError("Spend cap must be a positive CSPR amount.");
+      return;
+    }
+    setFormError("");
+    await runAction("vault_authorize", {
+      agentPublicKey: agentPublicKey.trim(),
+      spendCapCspr,
+      expiresInDays,
+      periodMs: 86_400_000,
+      allowedActions: 1,
+    });
+  };
+
+  const handleDeposit = async () => {
+    setFormError("");
+    await runAction("vault_deposit", { depositAmountCspr: depositAmount });
+  };
+
+  const handleTransfer = async () => {
+    if (!(Number(transferAmount) > 0)) {
+      setFormError("Transfer amount must be positive.");
+      return;
+    }
+    setFormError("");
+    await runAction("vault_transfer", {
+      transferAmountCspr: transferAmount,
+      recipientPublicKey: recipientPublicKey.trim() || publicKey,
+    });
+  };
+
+  const handleRevoke = async () => {
+    if (!agentReady) {
+      setFormError("Enter the agent public key to revoke.");
+      return;
+    }
+    setFormError("");
+    await runAction("vault_revoke", { agentPublicKey: agentPublicKey.trim() });
+  };
+
+  return (
+    <div className="space-y-6 sm:space-y-8">
+      <div>
+        <h2 className="font-sans text-2xl font-semibold tracking-wide sm:text-4xl">
+          Session Vault
+        </h2>
+        <p className="mt-2 font-mono text-sm text-[#888] sm:text-lg">
+          Bounded agent spending authority — cap, window, bitmask, expiry
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-4">
+        <StatCard label="Primitive" value="Vault" accent={accent} subtext="session keys" />
+        <StatCard label="Window" value="24h" accent={accent} subtext="default period" />
+        <StatCard label="Action bit" value="0x1" accent={accent} subtext="transfer" />
+        <StatCard
+          label="Package"
+          value={vaultHashPresent ? "Ready" : "Deploy"}
+          accent={accent}
+          subtext={vaultHashPresent ? "hash on account" : "install Vault WASM"}
+        />
+      </div>
+
+      {deploy ? (
+        <PanelCard
+          title="Deploy Vault package"
+          subtitle="Install Vault.wasm on casper-test, then sync hashes (Escrow + Attestation + Vault)"
+        >
+          {deploy.feedback.status !== "idle" ? (
+            <div className="mb-4">
+              <TransactionFeedback
+                feedback={deploy.feedback}
+                onDismiss={deploy.clearFeedback}
+              />
+            </div>
+          ) : null}
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={!connected || deployBusy}
+              onClick={() => void deploy.runDeploy("Vault")}
+              className="rounded px-4 py-2 font-sans text-xs font-medium text-[#0a0a0a] disabled:opacity-50"
+              style={{ backgroundColor: accent }}
+            >
+              {deploy.busyContract === "Vault" ? "Deploying..." : "Deploy Vault"}
+            </button>
+            <button
+              type="button"
+              disabled={!connected || deployBusy || !canSyncVault}
+              onClick={() => void deploy.runSync()}
+              className="rounded border border-white/15 px-4 py-2 font-sans text-xs text-[#ddd] transition hover:bg-white/5 disabled:opacity-50"
+            >
+              {deploy.busyContract === "sync" ? "Syncing..." : "Sync package hashes"}
+            </button>
+          </div>
+          <p className="mt-3 font-mono text-[10px] leading-relaxed text-[#666]">
+            Deploy requires Vault.wasm from{" "}
+            <span className="text-[#888]">
+              contracts/agentvault-core/scripts/build-windows.ps1
+            </span>
+            . After deploy, Sync writes package hashes for the dashboard.
+          </p>
+          {deploy.deployerHashes.vault ? (
+            <p className="mt-2 font-mono text-[10px] text-[#888]">
+              Account Vault hash: {deploy.deployerHashes.vault.slice(0, 18)}...
+            </p>
+          ) : null}
+        </PanelCard>
+      ) : null}
+
+      <div className="grid gap-4 lg:grid-cols-5 lg:gap-6">
+        <PanelCard
+          title="Policy controls"
+          subtitle="Authorize, fund, spend, revoke"
+          className="lg:col-span-3"
+        >
+          <div className="space-y-4">
+            <FormField
+              label="Agent public key"
+              id="vault-agent-key"
+              value={agentPublicKey}
+              onChange={setAgentPublicKey}
+              placeholder="01ab... agent account hex"
+              hint="The keypair the agent will use to sign spends"
+              disabled={anyBusy}
+            />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <FormField
+                label="Spend cap (CSPR / window)"
+                id="vault-cap"
+                value={spendCapCspr}
+                onChange={setSpendCapCspr}
+                placeholder="10"
+                disabled={anyBusy}
+              />
+              <FormField
+                label="Expires in (days)"
+                id="vault-expiry"
+                value={expiresInDays}
+                onChange={setExpiresInDays}
+                placeholder="7"
+                disabled={anyBusy}
+              />
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <FormField
+                label="Deposit amount (CSPR)"
+                id="vault-deposit"
+                value={depositAmount}
+                onChange={setDepositAmount}
+                placeholder="5"
+                disabled={anyBusy}
+              />
+              <FormField
+                label="Agent transfer (CSPR)"
+                id="vault-transfer"
+                value={transferAmount}
+                onChange={setTransferAmount}
+                placeholder="1"
+                disabled={anyBusy}
+              />
+            </div>
+            <FormField
+              label="Transfer recipient (optional)"
+              id="vault-recipient"
+              value={recipientPublicKey}
+              onChange={setRecipientPublicKey}
+              placeholder="Defaults to connected wallet"
+              disabled={anyBusy}
+            />
+            {formError ? (
+              <p className="font-mono text-[10px] text-[#e23636]">{formError}</p>
+            ) : null}
+            <div className="flex flex-wrap gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => void handleDeposit()}
+                disabled={!connected || anyBusy}
+                className="rounded border border-white/15 px-4 py-2 font-sans text-xs text-[#ddd] transition hover:bg-white/5 disabled:opacity-50"
+              >
+                {busyAction === "vault_deposit" ? "Depositing..." : "Deposit"}
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleAuthorize()}
+                disabled={!connected || anyBusy}
+                className="rounded px-4 py-2 font-sans text-xs font-medium text-[#0a0a0a] disabled:opacity-50"
+                style={{ backgroundColor: accent }}
+              >
+                {busyAction === "vault_authorize" ? "Authorizing..." : "Authorize agent"}
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleTransfer()}
+                disabled={!connected || anyBusy}
+                className="rounded border border-white/15 px-4 py-2 font-sans text-xs text-[#ddd] transition hover:bg-white/5 disabled:opacity-50"
+              >
+                {busyAction === "vault_transfer" ? "Spending..." : "Agent spend"}
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleRevoke()}
+                disabled={!connected || anyBusy}
+                className="rounded border border-[#e23636]/40 px-4 py-2 font-sans text-xs text-[#f0a0a0] transition hover:bg-[#e23636]/10 disabled:opacity-50"
+              >
+                {busyAction === "vault_revoke" ? "Revoking..." : "Revoke agent"}
+              </button>
+            </div>
+          </div>
+        </PanelCard>
+
+        <PanelCard
+          title="Why session keys"
+          subtitle="Agentic DeFi without full key exposure"
+          className="lg:col-span-2"
+        >
+          <ul className="space-y-3">
+            {POLICY_FEATURES.map((item) => (
+              <li
+                key={item.title}
+                className="rounded border border-white/8 bg-black/35 px-3 py-2.5"
+              >
+                <p className="font-sans text-xs font-medium text-[#ddd]">{item.title}</p>
+                <p className="mt-1 font-mono text-[10px] leading-relaxed text-[#777]">
+                  {item.detail}
+                </p>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-4 flex items-center gap-2">
+            <StatusBadge label="owner-gated" tone="active" />
+            <StatusBadge label="fail-closed" tone="warn" />
+          </div>
+        </PanelCard>
+      </div>
+
+      <PanelCard title="Activity" subtitle="Vault pipeline events">
+        <ActivityTimeline
+          entries={tabActivity}
+          accent={accent}
+          emptyLabel="No vault actions yet. Deploy Vault, deposit, then authorize an agent key."
+        />
+      </PanelCard>
+
+      <ModuleActionBar
+        actions={ACTIONS}
+        accent={accent}
+        connected={connected}
+        runAction={async (id) => {
+          if (id === "vault_authorize") return handleAuthorize();
+          if (id === "vault_deposit") return handleDeposit();
+          if (id === "vault_transfer") return handleTransfer();
+          if (id === "vault_revoke") return handleRevoke();
+        }}
+        feedback={feedback}
+        busyAction={busyAction}
+        clearFeedback={clearFeedback}
+        description="Session-key vault: deposit, authorize, agent spend, revoke — all settled on casper-test."
+      />
+    </div>
+  );
+}

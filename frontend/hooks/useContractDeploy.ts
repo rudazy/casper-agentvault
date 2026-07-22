@@ -28,6 +28,7 @@ export function useContractDeploy() {
   const [deployerHashes, setDeployerHashes] = useState<{
     escrow?: string;
     attestation?: string;
+    vault?: string;
   }>({});
 
   const refreshStatus = useCallback(async () => {
@@ -42,6 +43,7 @@ export function useContractDeploy() {
       setDeployerHashes({
         escrow: status.deployer.escrow,
         attestation: status.deployer.attestation,
+        vault: status.deployer.vault,
       });
     } catch {
       setPostJobSupported(null);
@@ -147,10 +149,16 @@ export function useContractDeploy() {
         }
 
         await refreshStatus();
+        const nextHint =
+          contract === "Escrow"
+            ? "Deploy Attestation next, then Vault, then Sync hashes."
+            : contract === "Attestation"
+              ? "Deploy Vault next (optional for MVP path), then Sync hashes."
+              : "Vault deployed. Sync hashes when Escrow + Attestation + Vault are on this account.";
         setFeedback({
           status: "success",
           actionLabel: label,
-          message: `${contract} deployed. Deploy Attestation next, then Sync hashes.`,
+          message: `${contract} deployed. ${nextHint}`,
           transactionHash,
         });
       } catch (error) {
@@ -175,13 +183,17 @@ export function useContractDeploy() {
     try {
       const result = await syncDeployedHashes(publicKey);
       setPostJobSupported(true);
-      setDeployerHashes({ escrow: result.escrow, attestation: result.attestation });
+      setDeployerHashes({
+        escrow: result.escrow,
+        attestation: result.attestation,
+        vault: result.vault,
+      });
       setFeedback({
         status: "success",
         actionLabel: "Sync package hashes",
         message: result.restartRequired
-          ? "Hashes saved. Restart npm run dev, then post a job."
-          : "Hashes saved. You can post a job now.",
+          ? "Hashes saved. Restart npm run dev, then run dashboard actions."
+          : "Hashes saved. Escrow, Attestation, and Vault ready for dashboard actions.",
       });
     } catch (error) {
       setFeedback({

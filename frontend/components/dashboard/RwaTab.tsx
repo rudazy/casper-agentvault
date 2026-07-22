@@ -15,7 +15,7 @@ import { useMemo, useState } from "react";
 const ACTIONS: TabAction[] = [
   { id: "rwa_submit", label: "Submit asset", hint: "Mock compliance intake" },
   { id: "rwa_verify", label: "Verify hash", hint: "On-chain reputation update", primary: true },
-  { id: "rwa_publish", label: "Publish attestation", hint: "Attestation.init on-chain" },
+  { id: "rwa_publish", label: "Publish attestation", hint: "Attestation.publish on-chain" },
 ];
 
 const QUEUE = [

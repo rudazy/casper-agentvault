@@ -1,4 +1,4 @@
-last_updated = "2026-06-21T14:03:20Z"
+last_updated = "2026-07-22T08:30:48Z"
 
 [[contracts]]
 name = "Escrow"
@@ -9,3 +9,8 @@ package_hash = "hash-75e9a98ffc98b9e7661a40f7a2ce0dfb382c1dd156bc3781c8b187310e5
 name = "Attestation"
 package_name = "Attestation"
 package_hash = "hash-25825b6d3e456ecc37eb77a15eecd8369dbfdf33c55aaf744f1a0007fe37db95"
+
+[[contracts]]
+name = "Vault"
+package_name = "Vault"
+package_hash = "hash-a0217981457fc2e54a7e947f8d054fad0b2d8e61e4e20773cdea862035b3825e"

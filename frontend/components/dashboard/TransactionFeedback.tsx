@@ -2,6 +2,7 @@
 
 import type { TxFeedback } from "@/hooks/useContractActions";
 import { AnimatePresence, motion } from "framer-motion";
+import { useState } from "react";
 
 function feedbackAccent(status: string): string {
   if (status === "success") return "#c8f135";
@@ -15,6 +16,11 @@ function shortenHash(hash: string): string {
   return `${hash.slice(0, 10)}...${hash.slice(-8)}`;
 }
 
+function explorerTxUrl(hash: string): string {
+  const clean = hash.replace(/^deploy-/, "").replace(/^transaction-/, "");
+  return `https://testnet.cspr.live/transaction/${clean}`;
+}
+
 const STATUS_STEPS = ["building", "signing", "success"] as const;
 
 export function TransactionFeedback({
@@ -26,6 +32,7 @@ export function TransactionFeedback({
 }) {
   const show = feedback.status !== "idle";
   const accent = feedbackAccent(feedback.status);
+  const [copied, setCopied] = useState(false);
   const activeStep =
     feedback.status === "building"
       ? 0
@@ -34,6 +41,17 @@ export function TransactionFeedback({
         : feedback.status === "success"
           ? 2
           : -1;
+
+  const copyHash = async () => {
+    if (!feedback.transactionHash) return;
+    try {
+      await navigator.clipboard.writeText(feedback.transactionHash);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
+    }
+  };
 
   return (
     <AnimatePresence>
@@ -111,8 +129,11 @@ export function TransactionFeedback({
                   <div className="mt-3 rounded border border-white/10 bg-black/35 p-3">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-mono text-[10px] uppercase tracking-wider text-[#666]">
-                        {feedback.agent.agent}
+                        Agent recommendation
                       </p>
+                      <span className="font-mono text-[10px] text-[#888]">
+                        {feedback.agent.agent}
+                      </span>
                       <span className="font-mono text-[9px] text-[#555]">
                         {feedback.agent.usedLlm ? "LLM" : "rules engine"}
                       </span>
@@ -120,6 +141,9 @@ export function TransactionFeedback({
                         {Math.round(feedback.agent.confidence * 100)}% confidence
                       </span>
                     </div>
+                    <p className="mt-2 font-mono text-xs leading-relaxed text-[#ddd]">
+                      {feedback.agent.summary}
+                    </p>
                     <p className="mt-2 font-mono text-[10px] leading-relaxed text-[#999]">
                       {feedback.agent.reasoning}
                     </p>
@@ -138,9 +162,26 @@ export function TransactionFeedback({
                   </div>
                 ) : null}
                 {feedback.transactionHash ? (
-                  <p className="mt-2 font-mono text-[10px] text-[#888]">
-                    TX: {shortenHash(feedback.transactionHash)}
-                  </p>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <p className="font-mono text-[10px] text-[#888]">
+                      TX: {shortenHash(feedback.transactionHash)}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => void copyHash()}
+                      className="rounded border border-white/15 px-2 py-1 font-mono text-[9px] uppercase tracking-wider text-[#aaa] transition hover:border-white/30 hover:text-white"
+                    >
+                      {copied ? "Copied" : "Copy hash"}
+                    </button>
+                    <a
+                      href={explorerTxUrl(feedback.transactionHash)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="rounded border border-[#c8f135]/30 px-2 py-1 font-mono text-[9px] uppercase tracking-wider text-[#c8f135] transition hover:bg-[#c8f135]/10"
+                    >
+                      Open explorer
+                    </a>
+                  </div>
                 ) : null}
               </div>
             </div>

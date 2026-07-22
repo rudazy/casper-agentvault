@@ -4,6 +4,8 @@ extern crate alloc;
 
 pub mod attestation;
 pub mod escrow;
+pub mod vault;
 
 pub use attestation::Attestation;
 pub use escrow::Escrow;
+pub use vault::Vault;

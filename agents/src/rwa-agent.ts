@@ -39,10 +39,10 @@ function fallbackFor(actionId: AgentRequest["actionId"]): AgentRecommendation {
         "Compliance checks passed. Initial trust score 85 is appropriate for new asset class.",
       confidence: 0.89,
       nextSteps: [
-        "Call Attestation.init with data_hash and initial_score.",
+        "Call Attestation.publish with data_hash and initial_score.",
         "Index attestation for marketplace reputation.",
       ],
-      preview: 'Attestation.init(data_hash, initial_score=85)',
+      preview: "Attestation.publish(data_hash, initial_score=85)",
     },
   };
 

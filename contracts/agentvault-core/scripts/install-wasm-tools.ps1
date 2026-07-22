@@ -23,15 +23,16 @@ if (-not (Test-Path (Join-Path $BinaryenDir "bin\wasm-opt.exe"))) {
     tar -xzf $BinaryenZip -C $Tools
 }
 
-$WabtZip = Join-Path $Tools "wabt-$WabtVersion-windows.zip"
+$WabtZip = Join-Path $Tools "wabt-$WabtVersion-windows.tar.gz"
 $WabtDir = Join-Path $Tools "wabt-$WabtVersion"
 if (-not (Test-Path (Join-Path $WabtDir "bin\wasm-strip.exe"))) {
     if (-not (Test-Path $WabtZip)) {
-        $WabtUrl = "https://github.com/WebAssembly/wabt/releases/download/$WabtVersion/wabt-$WabtVersion-windows.zip"
+        # wabt 1.0.37 ships windows binaries as .tar.gz (no .zip asset).
+        $WabtUrl = "https://github.com/WebAssembly/wabt/releases/download/$WabtVersion/wabt-$WabtVersion-windows.tar.gz"
         Write-Host "Downloading wabt..."
         Invoke-WebRequest -Uri $WabtUrl -OutFile $WabtZip
     }
-    Expand-Archive -Path $WabtZip -DestinationPath $Tools -Force
+    tar -xzf $WabtZip -C $Tools
 }
 
 Write-Host "WASM tools ready under $Tools"

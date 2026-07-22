@@ -49,7 +49,7 @@ Legend: **[DONE]** already true · **[LOCAL]** fixed in working tree (needs your
 | Requirement | Status | Action |
 |-------------|--------|--------|
 | MVP on Casper Testnet | **[DONE]** | Escrow + Attestation package hashes live; app at casperagent.xyz |
-| Intuitive UI / demo / playbook | **[LOCAL]** | `docs/JUDGE_PLAYBOOK.md` (step-by-step, no marketing) |
+| Intuitive UI / demo / playbook | **[LOCAL]** | `docs/DEMO_PLAYBOOK.md` (step-by-step, no marketing) |
 | Package hashes on BUIDL page | **[YOU]** | Copy from `docs/TESTNET.md` |
 | Sample Testnet transactions on BUIDL page | **[YOU]** | Run dashboard once; paste hashes into `docs/TESTNET.md` + BUIDL page |
 
@@ -78,9 +78,9 @@ Per project policy, AI does not commit or push. From repo root, after review:
 ```powershell
 # Option A — buildathon readiness only (recommended if Vault not ready)
 git add LICENSE SECURITY.md CONTRIBUTING.md CODE_OF_CONDUCT.md README.md
-git add .github docs/JUDGE_PLAYBOOK.md docs/TESTNET.md docs/BUILDATHON_CHECKLIST.md
+git add .github docs/DEMO_PLAYBOOK.md docs/TESTNET.md docs/BUILDATHON_CHECKLIST.md
 git status
-git commit -m "Add community standards, CI/CodeQL/Dependabot, and judge playbook"
+git commit -m "Add community standards, CI/CodeQL/Dependabot, and demo playbook"
 git push origin main
 ```
 

@@ -15,6 +15,7 @@ import {
   ATTESTATION_PACKAGE_HASH,
   CASPER_CHAIN_NAME,
   ESCROW_PACKAGE_HASH,
+  VAULT_PACKAGE_HASH,
   normalizePackageHash,
 } from "@/lib/casper/contract-config";
 import { createRpcClient } from "@/lib/casper/rpc";
@@ -36,7 +37,7 @@ const ODRA_ARGS = {
   packageHashKeyName: "odra_cfg_package_hash_key_name",
 } as const;
 
-export type DeployContractName = "Escrow" | "Attestation";
+export type DeployContractName = "Escrow" | "Attestation" | "Vault";
 
 function wasmPath(name: DeployContractName): string {
   const file = join(WASM_DIR, `${name}.wasm`);
@@ -73,16 +74,25 @@ export function buildDeployTransaction(
   const sender = senderKey(publicKeyHex);
   const wasmBytes = readFileSync(wasmPath(contractName));
 
-  const initArgs: Record<string, CLValue> =
-    contractName === "Escrow"
-      ? {
-          recipient: addressCLValue(sender),
-          amount: CLValue.newCLUInt512("0"),
-        }
-      : {
-          data_hash: CLValue.newCLString("agentvault-genesis"),
-          initial_score: CLValue.newCLUInt32(0),
-        };
+  let initArgs: Record<string, CLValue>;
+  switch (contractName) {
+    case "Escrow":
+      initArgs = {
+        recipient: addressCLValue(sender),
+        amount: CLValue.newCLUInt512("0"),
+      };
+      break;
+    case "Attestation":
+      initArgs = {
+        data_hash: CLValue.newCLString("agentvault-genesis"),
+        initial_score: CLValue.newCLUInt32(0),
+      };
+      break;
+    case "Vault":
+      // Vault init() takes no args; owner is the account that signs the install.
+      initArgs = {};
+      break;
+  }
 
   return new SessionBuilder()
     .from(sender)
@@ -98,6 +108,7 @@ export function buildDeployTransaction(
 export async function queryDeployerPackageHashes(publicKeyHex: string): Promise<{
   escrow?: string;
   attestation?: string;
+  vault?: string;
 }> {
   const rpc = createRpcClient();
   const publicKey = senderKey(publicKeyHex);
@@ -117,6 +128,7 @@ export async function queryDeployerPackageHashes(publicKeyHex: string): Promise<
   return {
     escrow: findHash("Escrow_package_hash"),
     attestation: findHash("Attestation_package_hash"),
+    vault: findHash("Vault_package_hash"),
   };
 }
 
@@ -156,7 +168,11 @@ function setEnvLine(content: string, key: string, value: string): string {
   return re.test(content) ? content.replace(re, line) : `${content.trimEnd()}\n${line}\n`;
 }
 
-function updateContractConfigTs(escrowHash: string, attestationHash: string) {
+function updateContractConfigTs(
+  escrowHash: string,
+  attestationHash: string,
+  vaultHash: string,
+) {
   if (!existsSync(CONFIG_TS)) return;
   let content = readFileSync(CONFIG_TS, "utf8");
   content = content.replace(
@@ -167,10 +183,19 @@ function updateContractConfigTs(escrowHash: string, attestationHash: string) {
     /const CASPER_TEST_ATTESTATION_PACKAGE_HASH =\s*\n\s*"[^"]+";/,
     `const CASPER_TEST_ATTESTATION_PACKAGE_HASH =\n  "${attestationHash}";`,
   );
+  // "[^"]*" (not +): the Vault placeholder starts out empty and must still match.
+  content = content.replace(
+    /const CASPER_TEST_VAULT_PACKAGE_HASH =\s*\n\s*"[^"]*";/,
+    `const CASPER_TEST_VAULT_PACKAGE_HASH =\n  "${vaultHash}";`,
+  );
   writeFileSync(CONFIG_TS, content);
 }
 
-export function persistDeployedHashes(escrowHash: string, attestationHash: string) {
+export function persistDeployedHashes(
+  escrowHash: string,
+  attestationHash: string,
+  vaultHash: string,
+) {
   const now = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
   writeFileSync(
     CONTRACTS_TOML,
@@ -185,6 +210,11 @@ package_hash = "${escrowHash}"
 name = "Attestation"
 package_name = "Attestation"
 package_hash = "${attestationHash}"
+
+[[contracts]]
+name = "Vault"
+package_name = "Vault"
+package_hash = "${vaultHash}"
 `,
   );
 
@@ -192,17 +222,20 @@ package_hash = "${attestationHash}"
     let env = readFileSync(ENV_LOCAL, "utf8");
     env = setEnvLine(env, "NEXT_PUBLIC_ESCROW_PACKAGE_HASH", escrowHash);
     env = setEnvLine(env, "NEXT_PUBLIC_ATTESTATION_PACKAGE_HASH", attestationHash);
+    env = setEnvLine(env, "NEXT_PUBLIC_VAULT_PACKAGE_HASH", vaultHash);
     writeFileSync(ENV_LOCAL, env.endsWith("\n") ? env : `${env}\n`);
   }
 
-  updateContractConfigTs(escrowHash, attestationHash);
+  updateContractConfigTs(escrowHash, attestationHash, vaultHash);
   process.env.NEXT_PUBLIC_ESCROW_PACKAGE_HASH = escrowHash;
   process.env.NEXT_PUBLIC_ATTESTATION_PACKAGE_HASH = attestationHash;
+  process.env.NEXT_PUBLIC_VAULT_PACKAGE_HASH = vaultHash;
 }
 
 export function getConfiguredHashes() {
   return {
     escrow: ESCROW_PACKAGE_HASH,
     attestation: ATTESTATION_PACKAGE_HASH,
+    vault: VAULT_PACKAGE_HASH,
   };
 }

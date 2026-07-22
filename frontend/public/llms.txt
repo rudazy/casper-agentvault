@@ -2,22 +2,24 @@
 
 > Autonomous operating system for on-chain AI agents. Live at https://casperagent.xyz
 
-AgentVault is one platform — not three separate demos. A shared wallet layer, agent coordinator, and Casper settlement infrastructure power three applications: Portfolio Guardian (Finance), RWA Oracle (Compliance), and Agent Marketplace (Commerce).
+AgentVault is one platform — not disconnected demos. A shared wallet layer, multi-agent coordinator, and Casper settlement infrastructure power Portfolio Guardian (Finance), RWA Oracle (Compliance), Agent Marketplace (Commerce), and Session Vault (bounded agent session keys).
 
 ## Pages
 
-- https://casperagent.xyz/ — Agent OS dashboard: wallet connect, three application tabs, on-chain actions
+- https://casperagent.xyz/ — Agent OS dashboard: wallet connect, application tabs, on-chain actions
 - https://casperagent.xyz/docs — Platform introduction and application overview
 - https://casperagent.xyz/docs/getting-started — Connect wallet and run first actions
 - https://casperagent.xyz/docs/faucet — Casper Wallet setup and testnet CSPR faucet
 - https://casperagent.xyz/docs/guardian — Finance application: Portfolio Guardian
 - https://casperagent.xyz/docs/rwa — Compliance application: RWA Oracle
 - https://casperagent.xyz/docs/marketplace — Commerce application: Agent Marketplace
+- https://casperagent.xyz/docs/vault — Agent treasury: Session Vault session keys
 - https://casperagent.xyz/docs/architecture — OS layers, agent pipeline, settlement
-- https://casperagent.xyz/docs/contracts — Escrow and Attestation smart contracts on casper-test
+- https://casperagent.xyz/docs/contracts — Escrow, Attestation, and Vault smart contracts on casper-test
 
 ## When to read
 
 - Use `/` for the live platform and wallet-connected workflows.
-- Use `/docs` to understand why Finance, Compliance, and Commerce belong on one OS.
+- Use `/docs` to understand the agent OS and application surface.
+- Use `/docs/vault` for session-key policy and agent spend limits.
 - Use `/docs/architecture` and `/docs/contracts` for integration or audit context.

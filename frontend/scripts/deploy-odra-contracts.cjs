@@ -129,7 +129,7 @@ async function deployContract(rpc, privateKey, contractName, wasmPath, initArgs)
   return packageHash;
 }
 
-function writeContractsToml(escrowHash, attestationHash) {
+function writeContractsToml(escrowHash, attestationHash, vaultHash) {
   const now = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
   const content = `last_updated = "${now}"
 
@@ -142,12 +142,17 @@ package_hash = "${escrowHash}"
 name = "Attestation"
 package_name = "Attestation"
 package_hash = "${attestationHash}"
+
+[[contracts]]
+name = "Vault"
+package_name = "Vault"
+package_hash = "${vaultHash}"
 `;
   writeFileSync(CONTRACTS_TOML, content);
   console.log(`Wrote ${CONTRACTS_TOML}`);
 }
 
-function updateContractConfigTs(escrowHash, attestationHash) {
+function updateContractConfigTs(escrowHash, attestationHash, vaultHash) {
   if (!existsSync(CONFIG_TS)) return;
   let content = readFileSync(CONFIG_TS, "utf8");
   content = content.replace(
@@ -158,11 +163,16 @@ function updateContractConfigTs(escrowHash, attestationHash) {
     /const CASPER_TEST_ATTESTATION_PACKAGE_HASH =\s*\n\s*"[^"]+";/,
     `const CASPER_TEST_ATTESTATION_PACKAGE_HASH =\n  "${attestationHash}";`,
   );
+  // "[^"]*" (not +): the Vault placeholder starts out empty and must still match.
+  content = content.replace(
+    /const CASPER_TEST_VAULT_PACKAGE_HASH =\s*\n\s*"[^"]*";/,
+    `const CASPER_TEST_VAULT_PACKAGE_HASH =\n  "${vaultHash}";`,
+  );
   writeFileSync(CONFIG_TS, content);
   console.log(`Updated ${CONFIG_TS}`);
 }
 
-function updateEnvLocal(escrowHash, attestationHash) {
+function updateEnvLocal(escrowHash, attestationHash, vaultHash) {
   let env = existsSync(ENV_LOCAL) ? readFileSync(ENV_LOCAL, "utf8") : "";
   const set = (key, value) => {
     const line = `${key}=${value}`;
@@ -171,6 +181,7 @@ function updateEnvLocal(escrowHash, attestationHash) {
   };
   set("NEXT_PUBLIC_ESCROW_PACKAGE_HASH", escrowHash);
   set("NEXT_PUBLIC_ATTESTATION_PACKAGE_HASH", attestationHash);
+  set("NEXT_PUBLIC_VAULT_PACKAGE_HASH", vaultHash);
   set("NEXT_PUBLIC_CASPER_CHAIN_NAME", CHAIN_NAME);
   if (!/NEXT_PUBLIC_CASPER_RPC_URL=/.test(env)) {
     set("NEXT_PUBLIC_CASPER_RPC_URL", RPC_URL);
@@ -188,7 +199,7 @@ async function main() {
   const balance = await getBalanceMotes(rpc, publicKey);
   console.log("Balance (motes):", balance);
 
-  if (BigInt(balance) < BigInt(DEPLOY_PAYMENT) * 2n) {
+  if (BigInt(balance) < BigInt(DEPLOY_PAYMENT) * 3n) {
     console.error(
       "\nInsufficient CSPR. Fund this public key at https://testnet.cspr.live/tools/faucet\n" +
         "Then re-run: node frontend/scripts/deploy-odra-contracts.cjs\n",
@@ -198,7 +209,8 @@ async function main() {
 
   const escrowWasm = join(WASM_DIR, "Escrow.wasm");
   const attestationWasm = join(WASM_DIR, "Attestation.wasm");
-  if (!existsSync(escrowWasm) || !existsSync(attestationWasm)) {
+  const vaultWasm = join(WASM_DIR, "Vault.wasm");
+  if (!existsSync(escrowWasm) || !existsSync(attestationWasm) || !existsSync(vaultWasm)) {
     throw new Error("Missing wasm files. Run contracts/agentvault-core/scripts/build-windows.ps1 first.");
   }
 
@@ -212,9 +224,12 @@ async function main() {
     initial_score: CLValue.newCLUInt32(0),
   });
 
-  writeContractsToml(escrowHash, attestationHash);
-  updateEnvLocal(escrowHash, attestationHash);
-  updateContractConfigTs(escrowHash, attestationHash);
+  // Vault init() takes no args; owner is set to the deploying key's account.
+  const vaultHash = await deployContract(rpc, privateKey, "Vault", vaultWasm, {});
+
+  writeContractsToml(escrowHash, attestationHash, vaultHash);
+  updateEnvLocal(escrowHash, attestationHash, vaultHash);
+  updateContractConfigTs(escrowHash, attestationHash, vaultHash);
   console.log("\nDeploy complete. Restart npm run dev and post a job.");
 }
 

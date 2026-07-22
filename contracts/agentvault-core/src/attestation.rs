@@ -1,6 +1,11 @@
 use odra::prelude::*;
 
-#[odra::module]
+#[odra::odra_error]
+pub enum AttestationError {
+    NotIssuer = 1,
+}
+
+#[odra::module(errors = AttestationError)]
 pub struct Attestation {
     issuer: Var<Address>,
     data_hash: Var<String>,
@@ -26,7 +31,51 @@ impl Attestation {
     }
 
     pub fn update_reputation(&mut self, new_score: u32) {
-        // TODO: only owner or verifier can update
+        let issuer = self.issuer.get_or_revert_with(ExecutionError::MissingAddress);
+        if self.env().caller() != issuer {
+            self.env().revert(AttestationError::NotIssuer);
+        }
         self.reputation_score.set(new_score);
+    }
+
+    pub fn get_reputation(&self) -> u32 {
+        self.reputation_score.get_or_default()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use odra::host::Deployer;
+
+    fn deploy() -> (odra::host::HostEnv, AttestationHostRef) {
+        let env = odra_test::env();
+        env.set_caller(env.get_account(0));
+        let attestation = Attestation::deploy(
+            &env,
+            AttestationInitArgs {
+                data_hash: "test-hash".to_string(),
+                initial_score: 50,
+            },
+        );
+        (env, attestation)
+    }
+
+    #[test]
+    fn issuer_update_succeeds() {
+        let (_env, mut attestation) = deploy();
+        attestation.update_reputation(80);
+        assert_eq!(attestation.get_reputation(), 80);
+    }
+
+    #[test]
+    fn non_issuer_update_reverts() {
+        let (env, mut attestation) = deploy();
+        env.set_caller(env.get_account(1));
+        assert_eq!(
+            attestation.try_update_reputation(99).unwrap_err(),
+            AttestationError::NotIssuer.into()
+        );
+        assert_eq!(attestation.get_reputation(), 50);
     }
 }

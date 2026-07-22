@@ -12,12 +12,13 @@ type CoordinatorLike = {
   ) => Promise<unknown>;
 };
 
-type AgentModule = "guardian" | "rwa" | "marketplace";
+type AgentModule = "guardian" | "rwa" | "marketplace" | "vault";
 
 const MODULE_ACTIONS: Record<AgentModule, ContractActionId[]> = {
   guardian: ["guardian_scan", "guardian_rebalance", "guardian_risk_log"],
   rwa: ["rwa_submit", "rwa_verify", "rwa_publish"],
   marketplace: ["market_browse", "market_post_job", "market_release"],
+  vault: ["vault_deposit", "vault_authorize", "vault_transfer", "vault_revoke"],
 };
 
 function resolveModule(actionId: ContractActionId): AgentModule | null {

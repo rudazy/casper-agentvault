@@ -48,6 +48,11 @@ export const docsNavigation: DocsNavSection[] = [
         label: "Agent Marketplace",
         description: "Commerce — escrow-powered agent hiring",
       },
+      {
+        href: "/docs/vault",
+        label: "Session Vault",
+        description: "Agent treasury — bounded session keys",
+      },
     ],
   },
   {
@@ -61,7 +66,7 @@ export const docsNavigation: DocsNavSection[] = [
       {
         href: "/docs/contracts",
         label: "Smart Contracts",
-        description: "Escrow and Attestation on casper-test",
+        description: "Escrow, Attestation, and Vault on casper-test",
       },
     ],
   },

@@ -1,6 +1,6 @@
-# Judge playbook — Casper AgentVault
+# Demo playbook — Casper AgentVault
 
-Step-by-step testing instructions for the deployed MVP. No marketing.
+Step-by-step walkthrough of the live MVP. No marketing copy.
 
 **Live app:** https://casperagent.xyz  
 **Docs:** https://casperagent.xyz/docs  
@@ -16,7 +16,8 @@ Estimated time: **10–15 minutes**.
 1. Chromium browser (Chrome / Brave / Edge).
 2. [Casper Wallet](https://www.casperwallet.io/) extension installed.
 3. Wallet network set to **Testnet** / `casper-test`.
-4. Testnet CSPR balance ≥ **15 CSPR** (each contract call reserves ~5 CSPR payment).
+4. Testnet CSPR balance ≥ **20 CSPR** for application calls (~5 CSPR payment each).
+5. For **new package installs** only: up to **500 CSPR** payment per install (Vault-only), or **1500 CSPR** if installing Escrow + Attestation + Vault in one session.
    - Faucet: https://testnet.cspr.live/faucet
    - Guide: https://casperagent.xyz/docs/faucet
 
@@ -28,13 +29,14 @@ Estimated time: **10–15 minutes**.
 |----------|--------------|----------|
 | **Escrow** | `hash-75e9a98ffc98b9e7661a40f7a2ce0dfb382c1dd156bc3781c8b187310e5809cb` | [cspr.live](https://testnet.cspr.live/contract-package/75e9a98ffc98b9e7661a40f7a2ce0dfb382c1dd156bc3781c8b187310e5809cb) |
 | **Attestation** | `hash-25825b6d3e456ecc37eb77a15eecd8369dbfdf33c55aaf744f1a0007fe37db95` | [cspr.live](https://testnet.cspr.live/contract-package/25825b6d3e456ecc37eb77a15eecd8369dbfdf33c55aaf744f1a0007fe37db95) |
+| **Vault** | `hash-a0217981457fc2e54a7e947f8d054fad0b2d8e61e4e20773cdea862035b3825e` | [cspr.live](https://testnet.cspr.live/contract-package/a0217981457fc2e54a7e947f8d054fad0b2d8e61e4e20773cdea862035b3825e) |
 
 Canonical file: `contracts/agentvault-core/resources/casper-test-contracts.toml`  
 Sample transactions: [`docs/TESTNET.md`](./TESTNET.md)
 
 ---
 
-## Test path A — Live dashboard (recommended)
+## Path A — Live dashboard (recommended)
 
 ### 1. Open and connect
 
@@ -48,7 +50,7 @@ Sample transactions: [`docs/TESTNET.md`](./TESTNET.md)
 ### 2. Portfolio Guardian (Finance) — RPC path
 
 1. Open the **Guardian** tab
-2. Run **Scan positions** (or equivalent scan action)
+2. Run **Scan positions**
 3. Confirm a live CSPR balance (or clear empty-balance message) returns
 
 **Pass:** RPC read succeeds without a wallet signature (or with connect-only).  
@@ -57,47 +59,60 @@ Sample transactions: [`docs/TESTNET.md`](./TESTNET.md)
 ### 3. RWA Oracle (Compliance) — Attestation contract
 
 1. Open the **RWA** tab
-2. Publish an attestation (data hash + initial score as prompted)
+2. Publish an attestation (data hash + score as prompted)
 3. Approve the transaction in Casper Wallet
-4. Wait for success feedback and copy the **transaction hash**
-5. Open `https://testnet.cspr.live/transaction/<TX_HASH>` and confirm finalized success
-6. Optionally run **Verify** / reputation update if shown; approve and record the second hash
+4. Wait for success feedback; use **Copy hash** and **Open explorer**
+5. Optionally run reputation update if shown; record that hash
 
 **Pass:** `Attestation` package call finalizes; explorer shows success.  
-**Entry points:** `init`, `update_reputation`
+**Entry points:** `publish`, `update_reputation` (issuer-only)
 
 ### 4. Agent Marketplace (Commerce) — Escrow contract
 
 1. Open the **Marketplace** tab
-2. Post a job (recipient + amount as prompted)
+2. Post a job (title + amount as prompted)
 3. Approve the transaction in Casper Wallet
-4. Copy the **transaction hash** and verify on testnet.cspr.live
-5. If available, run **verify_and_release** as owner and record that hash
+4. Copy the transaction hash and open explorer
+5. Optionally run **verify_and_release** as owner and record that hash
 
 **Pass:** `Escrow` package call finalizes.  
-**Entry points:** `init`, `verify_and_release`
+**Entry points:** `post_job`, `verify_and_release`
 
-### 5. Agent reasoning (optional)
+### 5. Session Vault (Agent Treasury) — Vault contract
 
-1. Trigger an action that shows agent recommendation / reasoning text
-2. Confirm the UI shows a structured recommendation before or with the on-chain step
+Recommended on-camera path when Vault is deployed: **authorize + revoke** (skip live deposit under time pressure).
 
-**Pass:** Coordinator returns a non-empty recommendation payload (LLM optional; mock path is acceptable).
+1. Open the **Session Vault** tab
+2. Confirm package is configured (not advisory-only)
+3. Enter an agent public key (second testnet account recommended)
+4. Set spend cap (e.g. 10 CSPR) and **Authorize agent**
+5. **Revoke agent** (panic button)
+6. Record transaction hashes
+
+**Pass:** `authorize_agent` and `revoke_agent` finalize.  
+**Entry points:** `authorize_agent`, `revoke_agent` (also `deposit`, `agent_transfer` when funding is intentional)
+
+### 6. Agent reasoning
+
+1. Trigger any on-chain action
+2. Confirm the feedback panel shows **Agent recommendation** (summary, reasoning, confidence, next steps) before or during signing
+
+**Pass:** Coordinator returns a non-empty recommendation payload (LLM optional; rules-engine path is acceptable).
 
 ---
 
-## Test path B — Docs-only smoke (no wallet)
+## Path B — Docs-only smoke (no wallet)
 
 1. https://casperagent.xyz/docs — introduction loads
 2. https://casperagent.xyz/docs/getting-started — steps present
-3. https://testnet.cspr.live/contract-package/75e9a98ffc98b9e7661a40f7a2ce0dfb382c1dd156bc3781c8b187310e5809cb — Escrow package exists
-4. https://testnet.cspr.live/contract-package/25825b6d3e456ecc37eb77a15eecd8369dbfdf33c55aaf744f1a0007fe37db95 — Attestation package exists
+3. Escrow package page on testnet.cspr.live (hash above)
+4. Attestation package page on testnet.cspr.live (hash above)
 
 **Pass:** Site and package pages load without 404.
 
 ---
 
-## Local clone (optional for reviewers)
+## Local clone (optional)
 
 ```bash
 git clone https://github.com/rudazy/casper-agentvault.git
@@ -118,17 +133,18 @@ cd contracts/agentvault-core && cargo test
 | Symptom | Check |
 |---------|--------|
 | Wallet will not connect | Casper Wallet unlocked; network = testnet; app domain registered in CSPR.click |
-| Tx rejected / insufficient funds | Faucet ≥ 15 CSPR; fee/payment ~5 CSPR per call |
+| Tx rejected / insufficient funds | Faucet balance; ~5 CSPR per call; install payment up to 500 CSPR |
 | Wrong network | Wallet must be `casper-test`, not mainnet |
 | Explorer 404 on package | Confirm hash matches `casper-test-contracts.toml` |
-| Site down | Open https://casperagent.xyz ; if broken, open an issue with timestamp |
+| Site down | Open https://casperagent.xyz ; open an issue with timestamp |
 
 ---
 
-## What to record on the BUIDL page
+## What to record when documenting a deployment
 
-1. Both package hashes (table above)
-2. At least two sample testnet transaction hashes with one-line descriptions:
-   - Attestation `init` (RWA publish)
-   - Escrow `init` (Marketplace post job)
-3. Link to this playbook: `docs/JUDGE_PLAYBOOK.md`
+1. Package hashes (Escrow + Attestation; Vault when deployed)
+2. Sample testnet transaction hashes with one-line descriptions:
+   - Attestation `publish`
+   - Escrow `post_job`
+   - Optional: Vault `authorize_agent` / `revoke_agent`
+3. Link to this playbook: `docs/DEMO_PLAYBOOK.md`

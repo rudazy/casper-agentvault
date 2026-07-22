@@ -15,7 +15,12 @@ odra-build = "2.8.1"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 odra-build = "2.8.1"
-odra-cli = "2.8.1"
+# Optional: the livenet CLI stack (casper-client) only compiles on unix hosts,
+# so it is feature-gated to keep `cargo test` working on Windows.
+odra-cli = { version = "2.8.1", optional = true }
+
+[features]
+cli = ["dep:odra-cli"]
 
 [[bin]]
 name = "deploy"
@@ -36,6 +41,7 @@ test = false
 name = "agentvault_core_cli"
 path = "bin/cli.rs"
 test = false
+required-features = ["cli"]
 
 [profile.release]
 codegen-units = 1

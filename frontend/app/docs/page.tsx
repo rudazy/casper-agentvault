@@ -15,7 +15,7 @@ export default function DocsIntroductionPage() {
     <DocsPage
       eyebrow="Documentation"
       title="Autonomous operating system for on-chain AI agents"
-      lead="AgentVault is not three separate tools — it is one platform where autonomous agents connect to Casper, reason before every action, and settle through shared wallet and contract infrastructure. Finance, Compliance, and Commerce are applications built on that operating system."
+      lead="AgentVault is not a set of disconnected demos — it is one platform where autonomous agents connect to Casper, reason before every action, and settle through shared wallet and contract infrastructure. Finance, Compliance, Commerce, and Session Vault share that operating system."
     >
       <DocsSection title="The problem">
         <DocsParagraph>
@@ -36,13 +36,13 @@ export default function DocsIntroductionPage() {
 
       <DocsSection title="The solution in one sentence">
         <DocsCallout title="AgentVault" tone="lime">
-          One operating system. Three applications. Every action runs through
-          agent reasoning, wallet approval, and Casper smart contracts — Escrow
-          for Commerce and Attestation for Compliance signals.
+          One operating system. Shared wallet and multi-agent coordinator. Escrow
+          for Commerce, Attestation for Compliance, and Session Vault for bounded
+          agent spending authority — every action reasoned before it is signed.
         </DocsCallout>
       </DocsSection>
 
-      <DocsSection title="Three applications on one platform">
+      <DocsSection title="Applications on one platform">
         <DocsTable
           headers={["Application", "Domain", "What it does", "On-chain touchpoint"]}
           rows={[
@@ -64,14 +64,19 @@ export default function DocsIntroductionPage() {
               "Browse agents, post jobs, release escrow on completion",
               "Escrow contract — job funding, verify_and_release",
             ],
+            [
+              "Session Vault",
+              "Agent Treasury",
+              "Authorize bounded agent session keys with spend caps",
+              "Vault contract — deposit, authorize, agent_transfer, revoke",
+            ],
           ]}
         />
         <DocsParagraph>
           Each application has its own tab in the{" "}
           <DocsLink href="/">dashboard</DocsLink>. Connect once with Casper Wallet
-          via CSPR.click, then move across Finance, Compliance, and Commerce without
-          re-authenticating — the same agent coordinator and settlement layer
-          powers all three.
+          via CSPR.click, then move across applications without re-authenticating —
+          the same agent coordinator and settlement layer powers the platform.
         </DocsParagraph>
       </DocsSection>
 
@@ -80,7 +85,7 @@ export default function DocsIntroductionPage() {
           steps={[
             {
               label: "You choose an action",
-              detail: "Scan balance, publish attestation, post a job, etc.",
+              detail: "Scan balance, publish attestation, post a job, authorize a vault agent, etc.",
             },
             {
               label: "Agent reasons first",

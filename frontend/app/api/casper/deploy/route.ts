@@ -12,7 +12,7 @@ import { NextResponse } from "next/server";
 export const runtime = "nodejs";
 
 function isDeployContract(value: unknown): value is DeployContractName {
-  return value === "Escrow" || value === "Attestation";
+  return value === "Escrow" || value === "Attestation" || value === "Vault";
 }
 
 export async function GET(request: Request) {
@@ -26,6 +26,7 @@ export async function GET(request: Request) {
     let deployer: {
       escrow?: string;
       attestation?: string;
+      vault?: string;
       balance?: string;
     } = {};
 
@@ -71,8 +72,9 @@ export async function POST(request: Request) {
     return NextResponse.json({
       contract: body.contract,
       label: `Deploy ${body.contract}`,
-      preview: `Install upgraded ${body.contract} WASM to casper-test (~100 CSPR max payment).`,
-      paymentHint: "Keep at least 250 CSPR available for Escrow + Attestation deploys.",
+      preview: `Install upgraded ${body.contract} WASM to casper-test (up to 500 CSPR max payment per install).`,
+      paymentHint:
+        "Fund the deployer with at least 500 CSPR for one install, or 1500 CSPR before Escrow + Attestation + Vault. Each install reserves up to 500 CSPR payment.",
       transaction: parsed,
     });
   } catch (error) {
@@ -94,17 +96,19 @@ export async function PUT(request: Request) {
       return NextResponse.json(
         {
           error:
-            "Deploy both Escrow and Attestation from this wallet before syncing package hashes.",
+            "Deploy Escrow and Attestation from this wallet before syncing package hashes. Vault is optional but recommended for Session Vault demos.",
         },
         { status: 400 },
       );
     }
 
-    persistDeployedHashes(hashes.escrow, hashes.attestation);
+    const vaultHash = hashes.vault ?? "";
+    persistDeployedHashes(hashes.escrow, hashes.attestation, vaultHash);
 
     return NextResponse.json({
       escrow: hashes.escrow,
       attestation: hashes.attestation,
+      vault: vaultHash || undefined,
       restartRequired: true,
     });
   } catch (error) {

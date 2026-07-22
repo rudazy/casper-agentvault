@@ -3,6 +3,7 @@
 import { GuardianTab } from "@/components/dashboard/GuardianTab";
 import { MarketplaceTab } from "@/components/dashboard/MarketplaceTab";
 import { RwaTab } from "@/components/dashboard/RwaTab";
+import { VaultTab } from "@/components/dashboard/VaultTab";
 import type { TabId } from "@/components/dashboard/types";
 import { useCasperWallet } from "@/components/providers/CasperClickProvider";
 import { TransactionFeedback } from "@/components/dashboard/TransactionFeedback";
@@ -22,6 +23,7 @@ const TABS: {
   { id: "guardian", label: "Portfolio Guardian", domain: "Finance", shortLabel: "Guardian", accent: "#c8f135" },
   { id: "rwa", label: "RWA Oracle", domain: "Compliance", shortLabel: "RWA", accent: "#f5c842" },
   { id: "marketplace", label: "Agent Marketplace", domain: "Commerce", shortLabel: "Market", accent: "#ff8a3d" },
+  { id: "vault", label: "Session Vault", domain: "Agent Treasury", shortLabel: "Vault", accent: "#e8e8e8" },
 ];
 
 function shortenKey(key: string): string {
@@ -153,8 +155,8 @@ export function AgentVaultDashboard() {
             The OS for on-chain AI agents
           </h1>
           <p className="mx-auto mt-4 max-w-2xl font-mono text-sm leading-relaxed text-[#888] sm:text-base">
-            One platform. Three applications — Finance, Compliance, and Commerce —
-            each powered by autonomous agents and settled on Casper.
+            One platform. Finance, Compliance, Commerce, and Session Vault —
+            autonomous agents with on-chain settlement and bounded spending authority on Casper.
           </p>
           {statusMessage ? (
             <p className="mx-auto mt-4 max-w-xl rounded border border-[#c8f135]/25 bg-[#c8f135]/10 px-4 py-2 font-mono text-xs text-[#d8f58a]">
@@ -216,6 +218,9 @@ export function AgentVaultDashboard() {
             {activeTab === "rwa" && <RwaTab {...tabProps} />}
             {activeTab === "marketplace" && (
               <MarketplaceTab {...tabProps} deploy={contractDeploy} />
+            )}
+            {activeTab === "vault" && (
+              <VaultTab {...tabProps} deploy={contractDeploy} />
             )}
 
             {connected && publicKey && (

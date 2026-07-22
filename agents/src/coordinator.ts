@@ -1,6 +1,7 @@
 import { guardianAgent } from "./guardian-agent.js";
 import { marketplaceAgent } from "./marketplace-agent.js";
 import { rwaAgent } from "./rwa-agent.js";
+import { vaultAgent } from "./vault-agent.js";
 import type {
   AgentHandler,
   AgentModule,
@@ -13,12 +14,14 @@ const MODULE_ACTIONS: Record<AgentModule, ContractActionId[]> = {
   guardian: ["guardian_scan", "guardian_rebalance", "guardian_risk_log"],
   rwa: ["rwa_submit", "rwa_verify", "rwa_publish"],
   marketplace: ["market_browse", "market_post_job", "market_release"],
+  vault: ["vault_deposit", "vault_authorize", "vault_transfer", "vault_revoke"],
 };
 
 const HANDLERS: Record<AgentModule, AgentHandler> = {
   guardian: guardianAgent,
   rwa: rwaAgent,
   marketplace: marketplaceAgent,
+  vault: vaultAgent,
 };
 
 export class AgentCoordinator {

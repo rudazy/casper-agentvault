@@ -16,8 +16,10 @@ import {
   DEFAULT_DEPLOY_COST,
   DEFAULT_TTL_MS,
   ESCROW_PACKAGE_HASH,
+  VAULT_PACKAGE_HASH,
   hasAttestationContract,
   hasEscrowContract,
+  hasVaultContract,
   normalizePackageHash,
 } from "@/lib/casper/contract-config";
 import { createRpcClient } from "@/lib/casper/rpc";
@@ -154,6 +156,130 @@ function buildAttestationUpdate(
   );
 }
 
+const ACTION_TRANSFER_BIT = 1;
+
+function requireVault(): void {
+  if (!hasVaultContract()) {
+    throw new Error(
+      "Set NEXT_PUBLIC_VAULT_PACKAGE_HASH after deploying Vault (or deploy Vault from the dashboard and sync hashes).",
+    );
+  }
+}
+
+function addressFromHex(publicKeyHex: string): CLValue {
+  const key = senderKey(publicKeyHex);
+  return CLValue.newCLKey(Key.newKey(key.accountHash().toPrefixedString()));
+}
+
+function parseAgentKey(payload?: Record<string, unknown>): string {
+  const agent =
+    typeof payload?.agentPublicKey === "string" ? payload.agentPublicKey.trim() : "";
+  if (!agent || agent.length < 16) {
+    throw new Error("Provide a valid agent public key (hex).");
+  }
+  return agent;
+}
+
+function buildVaultDeposit(network: CasperNetwork, publicKeyHex: string): Transaction {
+  requireVault();
+  // Payable entry: wallet may attach value depending on client support.
+  // Call still records the deposit event when value is attached on-chain.
+  return network.createContractPackageCallTransaction(
+    senderKey(publicKeyHex),
+    normalizePackageHash(VAULT_PACKAGE_HASH),
+    "deposit",
+    CASPER_CHAIN_NAME,
+    DEFAULT_DEPLOY_COST,
+    Args.fromMap({}),
+    DEFAULT_TTL_MS,
+  );
+}
+
+function buildVaultAuthorize(
+  network: CasperNetwork,
+  publicKeyHex: string,
+  payload?: Record<string, unknown>,
+): Transaction {
+  requireVault();
+  const agentKey = parseAgentKey(payload);
+  const spendCapMotes = csprToMotes(payload?.spendCapCspr, "10");
+  const periodMsRaw = Number(payload?.periodMs ?? 86_400_000);
+  const periodMs =
+    Number.isFinite(periodMsRaw) && periodMsRaw > 0 ? Math.floor(periodMsRaw) : 86_400_000;
+  const daysRaw = Number(payload?.expiresInDays ?? 7);
+  const expiresInDays =
+    Number.isFinite(daysRaw) && daysRaw > 0 ? Math.floor(daysRaw) : 7;
+  // Absolute ms deadline from now (matches Odra block time units used in tests).
+  const expiresAt = Date.now() + expiresInDays * 86_400_000;
+  const allowedActions =
+    typeof payload?.allowedActions === "number"
+      ? payload.allowedActions
+      : ACTION_TRANSFER_BIT;
+
+  return network.createContractPackageCallTransaction(
+    senderKey(publicKeyHex),
+    normalizePackageHash(VAULT_PACKAGE_HASH),
+    "authorize_agent",
+    CASPER_CHAIN_NAME,
+    DEFAULT_DEPLOY_COST,
+    Args.fromMap({
+      agent: addressFromHex(agentKey),
+      spend_cap: CLValue.newCLUInt512(spendCapMotes),
+      period_ms: CLValue.newCLUint64(periodMs),
+      allowed_actions: CLValue.newCLUInt32(allowedActions),
+      expires_at: CLValue.newCLUint64(expiresAt),
+    }),
+    DEFAULT_TTL_MS,
+  );
+}
+
+function buildVaultTransfer(
+  network: CasperNetwork,
+  publicKeyHex: string,
+  payload?: Record<string, unknown>,
+): Transaction {
+  requireVault();
+  const recipientRaw =
+    typeof payload?.recipientPublicKey === "string" && payload.recipientPublicKey.trim()
+      ? payload.recipientPublicKey.trim()
+      : publicKeyHex;
+  const amountMotes = csprToMotes(payload?.transferAmountCspr, "1");
+
+  return network.createContractPackageCallTransaction(
+    senderKey(publicKeyHex),
+    normalizePackageHash(VAULT_PACKAGE_HASH),
+    "agent_transfer",
+    CASPER_CHAIN_NAME,
+    DEFAULT_DEPLOY_COST,
+    Args.fromMap({
+      recipient: addressFromHex(recipientRaw),
+      amount: CLValue.newCLUInt512(amountMotes),
+    }),
+    DEFAULT_TTL_MS,
+  );
+}
+
+function buildVaultRevoke(
+  network: CasperNetwork,
+  publicKeyHex: string,
+  payload?: Record<string, unknown>,
+): Transaction {
+  requireVault();
+  const agentKey = parseAgentKey(payload);
+
+  return network.createContractPackageCallTransaction(
+    senderKey(publicKeyHex),
+    normalizePackageHash(VAULT_PACKAGE_HASH),
+    "revoke_agent",
+    CASPER_CHAIN_NAME,
+    DEFAULT_DEPLOY_COST,
+    Args.fromMap({
+      agent: addressFromHex(agentKey),
+    }),
+    DEFAULT_TTL_MS,
+  );
+}
+
 export async function buildAction(
   actionId: ContractActionId,
   publicKeyHex: string,
@@ -169,6 +295,10 @@ export async function buildAction(
     market_browse: "Browse agents",
     market_post_job: "Post a job",
     market_release: "Release escrow",
+    vault_deposit: "Deposit to vault",
+    vault_authorize: "Authorize agent",
+    vault_transfer: "Agent transfer",
+    vault_revoke: "Revoke agent",
   };
 
   if (actionId === "guardian_scan") {
@@ -252,6 +382,92 @@ export async function buildAction(
       mode: "transaction",
       transaction,
       preview: `Attestation.publish(data_hash="${hash}", initial_score=85)`,
+    };
+  }
+
+  if (actionId === "vault_deposit") {
+    if (!hasVaultContract()) {
+      return {
+        actionId,
+        label: labels[actionId],
+        mode: "mock",
+        preview:
+          "Vault package not configured. Deploy Vault on casper-test and set NEXT_PUBLIC_VAULT_PACKAGE_HASH.",
+      };
+    }
+    const amount = csprToMotes(payload?.depositAmountCspr, "5");
+    const cspr = (Number(amount) / 1_000_000_000).toFixed(2);
+    const transaction = buildVaultDeposit(networkClient!, publicKeyHex);
+    return {
+      actionId,
+      label: labels[actionId],
+      mode: "transaction",
+      transaction,
+      preview: `Vault.deposit() — intended amount ${cspr} CSPR (attach value in wallet if prompted)`,
+    };
+  }
+
+  if (actionId === "vault_authorize") {
+    if (!hasVaultContract()) {
+      return {
+        actionId,
+        label: labels[actionId],
+        mode: "mock",
+        preview:
+          "Vault package not configured. Deploy Vault and sync package hashes before authorizing agents.",
+      };
+    }
+    const agentKey = parseAgentKey(payload);
+    const cap = (Number(csprToMotes(payload?.spendCapCspr, "10")) / 1_000_000_000).toFixed(2);
+    const transaction = buildVaultAuthorize(networkClient!, publicKeyHex, payload);
+    return {
+      actionId,
+      label: labels[actionId],
+      mode: "transaction",
+      transaction,
+      preview: `Vault.authorize_agent(agent=${agentKey.slice(0, 12)}..., spend_cap=${cap} CSPR)`,
+    };
+  }
+
+  if (actionId === "vault_transfer") {
+    if (!hasVaultContract()) {
+      return {
+        actionId,
+        label: labels[actionId],
+        mode: "mock",
+        preview: "Vault package not configured. Cannot run agent_transfer.",
+      };
+    }
+    const amount = (Number(csprToMotes(payload?.transferAmountCspr, "1")) / 1_000_000_000).toFixed(
+      2,
+    );
+    const transaction = buildVaultTransfer(networkClient!, publicKeyHex, payload);
+    return {
+      actionId,
+      label: labels[actionId],
+      mode: "transaction",
+      transaction,
+      preview: `Vault.agent_transfer(amount=${amount} CSPR) — sign as authorized agent`,
+    };
+  }
+
+  if (actionId === "vault_revoke") {
+    if (!hasVaultContract()) {
+      return {
+        actionId,
+        label: labels[actionId],
+        mode: "mock",
+        preview: "Vault package not configured. Cannot revoke agents.",
+      };
+    }
+    const agentKey = parseAgentKey(payload);
+    const transaction = buildVaultRevoke(networkClient!, publicKeyHex, payload);
+    return {
+      actionId,
+      label: labels[actionId],
+      mode: "transaction",
+      transaction,
+      preview: `Vault.revoke_agent(agent=${agentKey.slice(0, 12)}...)`,
     };
   }
 

@@ -13,12 +13,24 @@ foreach ($tool in @("wasm-opt.exe", "wasm-strip.exe")) {
     }
 }
 
+# Host build scripts/proc-macros compile for x86_64-pc-windows-gnu. Linking them
+# against rustup's bundled MinGW libs (rust-mingw) avoids requiring libgcc_eh.a
+# from an external gcc. Needs cargo host-config (nightly, pinned in rust-toolchain);
+# plain target rustflags don't reach host units when building --target wasm32.
+if (-not $env:CARGO_HOST_RUSTFLAGS) {
+    $env:CARGO_UNSTABLE_HOST_CONFIG = "true"
+    $env:CARGO_UNSTABLE_TARGET_APPLIES_TO_HOST = "true"
+    $env:CARGO_TARGET_APPLIES_TO_HOST = "false"
+    $env:CARGO_HOST_RUSTFLAGS = "-C link-self-contained=yes"
+}
+
 $WasmDir = Join-Path $Root "wasm"
 New-Item -ItemType Directory -Force -Path $WasmDir | Out-Null
 
 $contracts = @(
     @{ Name = "Escrow"; Module = "escrow" },
-    @{ Name = "Attestation"; Module = "attestation" }
+    @{ Name = "Attestation"; Module = "attestation" },
+    @{ Name = "Vault"; Module = "vault" }
 )
 
 $sourceWasm = Join-Path $Root "target\wasm32-unknown-unknown\release\agentvault_core_build_contract.wasm"
@@ -53,4 +65,4 @@ foreach ($contract in $contracts) {
     if ($LASTEXITCODE -ne 0) { throw "wasm-strip failed for $($contract.Name)" }
 }
 
-Write-Host "WASM build complete: Escrow.wasm, Attestation.wasm"
+Write-Host "WASM build complete: Escrow.wasm, Attestation.wasm, Vault.wasm"

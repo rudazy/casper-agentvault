@@ -8,12 +8,18 @@ const CASPER_TEST_ESCROW_PACKAGE_HASH =
 const CASPER_TEST_ATTESTATION_PACKAGE_HASH =
   "hash-25825b6d3e456ecc37eb77a15eecd8369dbfdf33c55aaf744f1a0007fe37db95";
 
+const CASPER_TEST_VAULT_PACKAGE_HASH =
+  "hash-a0217981457fc2e54a7e947f8d054fad0b2d8e61e4e20773cdea862035b3825e";
+
 export const ESCROW_PACKAGE_HASH =
   process.env.NEXT_PUBLIC_ESCROW_PACKAGE_HASH ?? CASPER_TEST_ESCROW_PACKAGE_HASH;
 
 export const ATTESTATION_PACKAGE_HASH =
   process.env.NEXT_PUBLIC_ATTESTATION_PACKAGE_HASH ??
   CASPER_TEST_ATTESTATION_PACKAGE_HASH;
+
+export const VAULT_PACKAGE_HASH =
+  process.env.NEXT_PUBLIC_VAULT_PACKAGE_HASH ?? CASPER_TEST_VAULT_PACKAGE_HASH;
 
 /** Minimum payment (motes) accepted by casper-test for contract package calls. */
 export const DEFAULT_DEPLOY_COST = 5_000_000_000;
@@ -29,4 +35,8 @@ export function hasEscrowContract(): boolean {
 
 export function hasAttestationContract(): boolean {
   return ATTESTATION_PACKAGE_HASH.length > 0;
+}
+
+export function hasVaultContract(): boolean {
+  return VAULT_PACKAGE_HASH.length > 0;
 }
