@@ -12,7 +12,7 @@ import {
 } from "@/components/dashboard/shared";
 import type { TabAction, TabPanelProps } from "@/components/dashboard/types";
 import type { useContractDeploy } from "@/hooks/useContractDeploy";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type ContractDeploy = ReturnType<typeof useContractDeploy>;
 
@@ -66,6 +66,14 @@ export function VaultTab({
   const [recipientPublicKey, setRecipientPublicKey] = useState("");
   const [formError, setFormError] = useState("");
 
+  // Single-wallet demo/judge path: agent = connected key so the same account
+  // can authorize (as owner) and agent_transfer (as agent) without a second key.
+  useEffect(() => {
+    if (publicKey && !agentPublicKey.trim()) {
+      setAgentPublicKey(publicKey);
+    }
+  }, [publicKey, agentPublicKey]);
+
   const tabActivity = recentActivity
     .filter((e) => e.actionId.startsWith("vault_"))
     .slice(0, 4)
@@ -102,17 +110,20 @@ export function VaultTab({
   );
 
   const handleAuthorize = async () => {
-    if (!agentReady) {
-      setFormError("Enter the agent account public key (hex, 16+ chars).");
+    // Single-wallet / any-judge path: always authorize the connected account as agent.
+    const agent = (publicKey ?? agentPublicKey).trim();
+    if (!agent || agent.length < 16) {
+      setFormError("Connect a wallet (agent defaults to the connected public key).");
       return;
     }
     if (!(Number(spendCapCspr) > 0)) {
       setFormError("Spend cap must be a positive CSPR amount.");
       return;
     }
+    setAgentPublicKey(agent);
     setFormError("");
     await runAction("vault_authorize", {
-      agentPublicKey: agentPublicKey.trim(),
+      agentPublicKey: agent,
       spendCapCspr,
       expiresInDays,
       periodMs: 86_400_000,
@@ -121,6 +132,10 @@ export function VaultTab({
   };
 
   const handleDeposit = async () => {
+    if (!(Number(depositAmount) > 0)) {
+      setFormError("Deposit amount must be positive CSPR.");
+      return;
+    }
     setFormError("");
     await runAction("vault_deposit", { depositAmountCspr: depositAmount });
   };
@@ -131,6 +146,7 @@ export function VaultTab({
       return;
     }
     setFormError("");
+    // Caller must be the authorized agent — use connected wallet (self-authorize path).
     await runAction("vault_transfer", {
       transferAmountCspr: transferAmount,
       recipientPublicKey: recipientPublicKey.trim() || publicKey,
@@ -138,12 +154,14 @@ export function VaultTab({
   };
 
   const handleRevoke = async () => {
-    if (!agentReady) {
-      setFormError("Enter the agent public key to revoke.");
+    const agent = (publicKey ?? agentPublicKey).trim();
+    if (!agent || agent.length < 16) {
+      setFormError("Connect a wallet to revoke (revokes the connected key's policy).");
       return;
     }
+    setAgentPublicKey(agent);
     setFormError("");
-    await runAction("vault_revoke", { agentPublicKey: agentPublicKey.trim() });
+    await runAction("vault_revoke", { agentPublicKey: agent });
   };
 
   return (
@@ -202,6 +220,12 @@ export function VaultTab({
                   Open package on explorer
                 </a>
               ) : null}
+              <p className="font-mono text-[10px] leading-relaxed text-[#f5c842]/90">
+                Owner-only entry points (authorize / revoke / withdraw) require the
+                wallet that installed this package. If you see User error: 1, either
+                switch to that wallet or use Install new Vault with the connected
+                wallet (~500 CSPR), then set the new package hash.
+              </p>
             </div>
           ) : null}
 
@@ -251,6 +275,44 @@ export function VaultTab({
         </PanelCard>
       ) : null}
 
+      <PanelCard
+        title="How ownership works"
+        subtitle="Installer wallet = owner. Connecting alone does not grant ownership."
+      >
+        <p className="mb-3 font-mono text-[10px] leading-relaxed text-[#999]">
+          The wallet that deploys this Vault package is permanently owner of that
+          package. Owner-only: authorize, revoke, withdraw. Agent spend must be signed
+          by a key the owner authorized (defaults to your connected key for a one-wallet
+          demo). Shared public package hash is owned by its installer — other wallets
+          should use Install new Vault first.
+        </p>
+        <ol className="list-decimal space-y-1.5 pl-4 font-mono text-[10px] leading-relaxed text-[#999]">
+          <li>
+            If authorize fails with Not owner (User error: 1):{" "}
+            <span className="text-[#ddd]">Install new Vault</span> from this wallet,
+            then sync / use that package hash.
+          </li>
+          <li>
+            <span className="text-[#ddd]">Authorize agent</span> — uses your connected
+            key as the agent (no second wallet required).
+          </li>
+          <li>
+            <span className="text-[#ddd]">Deposit</span> before Agent spend (payable;
+            keep ~100 CSPR free for payment gas).
+          </li>
+          <li>
+            <span className="text-[#ddd]">Agent spend</span> — same wallet (error 7 =
+            empty vault; error 2 = not authorized / already revoked).
+          </li>
+          <li>
+            <span className="text-[#ddd]">Revoke agent</span> — last step in a demo.
+          </li>
+        </ol>
+        <p className="mt-3 font-mono text-[10px] text-[#666]">
+          Full write-up: /docs/vault and docs/DEMO_PLAYBOOK.md
+        </p>
+      </PanelCard>
+
       <div className="grid gap-4 lg:grid-cols-5 lg:gap-6">
         <PanelCard
           title="Policy controls"
@@ -263,10 +325,20 @@ export function VaultTab({
               id="vault-agent-key"
               value={agentPublicKey}
               onChange={setAgentPublicKey}
-              placeholder="01ab... agent account hex"
-              hint="The keypair the agent will use to sign spends"
+              placeholder="Connected wallet hex (default for single-wallet demo)"
+              hint="Must match the wallet that will sign Agent spend. Pre-filled with your connected key for the standard demo."
               disabled={anyBusy}
             />
+            {publicKey ? (
+              <button
+                type="button"
+                disabled={anyBusy}
+                onClick={() => setAgentPublicKey(publicKey)}
+                className="font-mono text-[10px] uppercase tracking-wider text-[#c8f135] transition hover:opacity-80 disabled:opacity-50"
+              >
+                Use connected wallet as agent
+              </button>
+            ) : null}
             <div className="grid gap-3 sm:grid-cols-2">
               <FormField
                 label="Spend cap (CSPR / window)"

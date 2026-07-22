@@ -11,6 +11,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@casper-ecosystem/odra-js-client": "^1.0.0",
     "@langchain/core": "1.1.38",
     "@langchain/openai": "1.2.10",
     "@make-software/csprclick-core-types": "^2.1.0",

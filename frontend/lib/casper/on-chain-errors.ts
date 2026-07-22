@@ -15,5 +15,28 @@ export function humanizeOnChainError(message: string): string {
     );
   }
 
+  // Odra VaultError codes surface as "User error: N" from casper-test execution results.
+  const userCode = normalized.match(/user error:\s*(\d+)/i);
+  if (userCode) {
+    const code = Number(userCode[1]);
+    const vaultMessages: Record<number, string> = {
+      1:
+        "Not owner. authorize_agent / revoke_agent / withdraw only work for the wallet that installed this Vault package. Deploy Vault from the connected wallet (or switch to the installer key).",
+      2:
+        "Agent not authorized. The signing wallet is not an active agent on this Vault. Authorize this key first (for a one-wallet demo: set agent = your connected key, Authorize, then Agent spend). Order: authorize → spend → revoke.",
+      3:
+        "Agent revoked. Re-authorize the agent before agent spend (demo order: authorize → spend → revoke).",
+      4: "Session expired. Re-authorize with a later expires_at.",
+      5: "Action not allowed by agent bitmask (transfer bit not set).",
+      6: "Spend cap exceeded for this window.",
+      7:
+        "Insufficient vault balance. Use Deposit with a positive CSPR amount first (payable proxy attaches funds). Plain deposit without attach leaves the vault empty.",
+      8: "Invalid policy (spend cap, period, or expiry).",
+    };
+    if (vaultMessages[code]) {
+      return vaultMessages[code];
+    }
+  }
+
   return normalized;
 }

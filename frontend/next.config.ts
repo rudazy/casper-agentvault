@@ -6,6 +6,8 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/api/casper/deploy": ["./wasm/**/*"],
     "/api/casper/deploy/**/*": ["./wasm/**/*"],
+    "/api/casper/actions": ["./wasm/**/*"],
+    "/api/casper/actions/**/*": ["./wasm/**/*"],
   },
 };
 

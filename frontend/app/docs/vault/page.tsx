@@ -12,8 +12,42 @@ export default function VaultDocsPage() {
     <DocsPage
       eyebrow="Agent Treasury"
       title="Session Vault"
-      lead="Bounded agent spending authority on Casper. The owner deposits CSPR and grants agent keypairs a spend cap, rolling window, action bitmask, and absolute expiry — without sharing the owner key."
+      lead="Bounded agent spending authority on Casper. The package owner deposits CSPR and grants an agent key a spend cap, rolling window, action bitmask, and absolute expiry — without sharing the owner key."
     >
+      <DocsSection title="Who owns a Vault package?">
+        <DocsParagraph>
+          Ownership is set once, at install time. When a wallet deploys (installs)
+          the Vault package, <DocsCode>init</DocsCode> stores that wallet as{" "}
+          <DocsCode>owner</DocsCode>. There is no separate claim step.
+        </DocsParagraph>
+        <DocsTable
+          headers={["Role", "How you get it", "What you can do"]}
+          rows={[
+            [
+              "Owner",
+              "Wallet that signed the Vault install",
+              "authorize_agent, revoke_agent, withdraw",
+            ],
+            [
+              "Agent",
+              "Owner calls authorize_agent for that public key",
+              "agent_transfer under cap / window / expiry",
+            ],
+            [
+              "Anyone",
+              "Any funded testnet wallet",
+              "deposit (payable), read get_owner / get_policy / vault_balance",
+            ],
+          ]}
+        />
+        <DocsParagraph>
+          Connecting to casperagent.xyz does not grant ownership. Using the shared
+          public package hash only works for owner-gated calls if your connected
+          wallet is the installer of that package. Otherwise install your own Vault
+          from the Session Vault tab (up to ~500 CSPR payment), then use that package.
+        </DocsParagraph>
+      </DocsSection>
+
       <DocsSection title="Why session keys">
         <DocsParagraph>
           Autonomous agents need to sign transactions. Handing them a funded
@@ -40,7 +74,7 @@ export default function VaultDocsPage() {
         <DocsTable
           headers={["Entry point", "Caller", "Purpose"]}
           rows={[
-            ["deposit", "Anyone (payable)", "Fund the vault balance"],
+            ["deposit", "Anyone (payable)", "Fund the vault balance (CSPR attached)"],
             ["withdraw", "Owner", "Withdraw unused CSPR"],
             ["authorize_agent", "Owner", "Grant or replace agent policy"],
             ["revoke_agent", "Owner", "Idempotent panic-button revoke"],
@@ -50,21 +84,44 @@ export default function VaultDocsPage() {
         />
       </DocsSection>
 
-      <DocsSection title="Recommended demo path">
+      <DocsSection title="One-wallet demo path (any tester)">
         <DocsParagraph>
-          From the dashboard <DocsCode>Session Vault</DocsCode> tab: authorize an
-          agent public key with a small spend cap, then revoke. That sequence
-          shows bounded session keys without requiring a live deposit under
-          time pressure. Copy transaction hashes into{" "}
-          <DocsCode>docs/TESTNET.md</DocsCode> when you publish a deployment.
+          You do not need a second key. On the dashboard Session Vault tab:
+        </DocsParagraph>
+        <DocsTable
+          headers={["Step", "Action"]}
+          rows={[
+            ["1", "Connect Casper Wallet on casper-test (fund via faucet)"],
+            [
+              "2",
+              "If authorize fails with Not owner: Deploy / Install Vault from this wallet, then use that package hash",
+            ],
+            [
+              "3",
+              "Authorize agent — agent defaults to your connected public key",
+            ],
+            [
+              "4",
+              "Deposit a small CSPR amount (payable proxy; keep ~100 CSPR free for payment)",
+            ],
+            ["5", "Agent spend — same wallet signs as the authorized agent"],
+            ["6", "Revoke agent last (panic button)"],
+          ]}
+        />
+        <DocsParagraph>
+          Order matters: authorize → deposit → agent spend → revoke. Spending
+          after revoke fails closed. Empty vault balance fails agent spend until
+          deposit lands.
         </DocsParagraph>
       </DocsSection>
 
-      <DocsCallout title="Deployment note" tone="lime">
-        Publish the Vault package hash in the testnet TOML and environment
-        before treating Session Vault as live. Install payment is up to{" "}
-        <DocsCode>500 CSPR</DocsCode> per package. Escrow and Attestation remain
-        the core settlement path when Vault is not yet configured.
+      <DocsCallout title="Shared MVP package vs your own install" tone="lime">
+        The repo publishes a sample Vault package hash for verification on
+        testnet.cspr.live. Owner-only calls on that package succeed only for the
+        installer account. For a full interactive demo with your own wallet,
+        install a Vault from the Session Vault tab. Install payment is up to{" "}
+        <DocsCode>500 CSPR</DocsCode>. Escrow and Attestation remain the shared
+        settlement path for Marketplace and RWA without per-user installs.
       </DocsCallout>
     </DocsPage>
   );

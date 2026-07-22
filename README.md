@@ -175,6 +175,15 @@ contracts/agentvault-core/resources/casper-test-contracts.toml
 
 Application package calls reserve **5 CSPR** payment (`DEFAULT_DEPLOY_COST`). Fresh **installs** reserve up to **500 CSPR** payment each. Use the [testnet faucet](https://testnet.cspr.live/faucet).
 
+### Session Vault ownership (important for testers)
+
+- **Owner** = the wallet that **installed** that Vault package (`init` stores `caller` as owner). Connecting to the site does not grant ownership.
+- **Owner-only:** `authorize_agent`, `revoke_agent`, `withdraw`.
+- **Agent-only:** `agent_transfer` (must be signed by a key the owner authorized).
+- **Anyone:** payable `deposit`, read helpers.
+- **One-wallet demo:** install Vault from your wallet (or be the package owner) → authorize **yourself** as agent → deposit → agent spend → revoke last.
+- Shared package hash in this README is for explorer verification; full interactive Vault demos with a random wallet require that wallet to install its own package (or use the installer key). Details: [docs/vault](https://casperagent.xyz/docs/vault) and [docs/DEMO_PLAYBOOK.md](docs/DEMO_PLAYBOOK.md).
+
 ## Security
 
 - Report vulnerabilities privately — see [SECURITY.md](./SECURITY.md)

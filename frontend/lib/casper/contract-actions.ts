@@ -1,5 +1,8 @@
 import "server-only";
 
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import { buildOdraProxyCallArgs } from "@casper-ecosystem/odra-js-client";
 import {
   Args,
   CasperNetwork,
@@ -7,6 +10,7 @@ import {
   Key,
   PublicKey,
   PurseIdentifier,
+  SessionBuilder,
   type Transaction,
 } from "casper-js-sdk";
 import type { ContractActionId } from "@/lib/casper/contract-action-types";
@@ -171,28 +175,65 @@ function addressFromHex(publicKeyHex: string): CLValue {
   return CLValue.newCLKey(Key.newKey(key.accountHash().toPrefixedString()));
 }
 
-function parseAgentKey(payload?: Record<string, unknown>): string {
-  const agent =
+function parseAgentKey(
+  payload?: Record<string, unknown>,
+  fallbackPublicKey?: string,
+): string {
+  const fromPayload =
     typeof payload?.agentPublicKey === "string" ? payload.agentPublicKey.trim() : "";
+  const agent = fromPayload || (fallbackPublicKey ?? "").trim();
   if (!agent || agent.length < 16) {
     throw new Error("Provide a valid agent public key (hex).");
   }
   return agent;
 }
 
-function buildVaultDeposit(network: CasperNetwork, publicKeyHex: string): Transaction {
+function resolveProxyWasm(): Uint8Array {
+  const candidates = [
+    join(process.cwd(), "wasm", "proxy_caller_with_return.wasm"),
+    join(process.cwd(), "frontend", "wasm", "proxy_caller_with_return.wasm"),
+    join(__dirname, "..", "..", "wasm", "proxy_caller_with_return.wasm"),
+  ];
+  for (const path of candidates) {
+    if (existsSync(path)) {
+      return new Uint8Array(readFileSync(path));
+    }
+  }
+  throw new Error(
+    "Missing proxy_caller_with_return.wasm (required for payable Vault.deposit). " +
+      "Expected at frontend/wasm/proxy_caller_with_return.wasm.",
+  );
+}
+
+/**
+ * Odra payable entry points require a Session call via proxy WASM so CSPR is
+ * transferred into the contract purse (package calls alone attach 0 value).
+ */
+function buildVaultDeposit(
+  _network: CasperNetwork,
+  publicKeyHex: string,
+  payload?: Record<string, unknown>,
+): Transaction {
   requireVault();
-  // Payable entry: wallet may attach value depending on client support.
-  // Call still records the deposit event when value is attached on-chain.
-  return network.createContractPackageCallTransaction(
-    senderKey(publicKeyHex),
+  const amountMotes = csprToMotes(payload?.depositAmountCspr, "5");
+  const proxyWasm = resolveProxyWasm();
+  const outerArgs = buildOdraProxyCallArgs(
     normalizePackageHash(VAULT_PACKAGE_HASH),
     "deposit",
-    CASPER_CHAIN_NAME,
-    DEFAULT_DEPLOY_COST,
     Args.fromMap({}),
-    DEFAULT_TTL_MS,
+    amountMotes,
   );
+
+  // Proxy session is heavier than a package call — 5 CSPR payment OOMs on casper-test.
+  const PROXY_PAYMENT = 100_000_000_000; // 100 CSPR max payment
+  return new SessionBuilder()
+    .from(senderKey(publicKeyHex))
+    .wasm(proxyWasm)
+    .runtimeArgs(outerArgs)
+    .chainName(CASPER_CHAIN_NAME)
+    .ttl(DEFAULT_TTL_MS)
+    .payment(PROXY_PAYMENT, 1)
+    .build();
 }
 
 function buildVaultAuthorize(
@@ -201,7 +242,8 @@ function buildVaultAuthorize(
   payload?: Record<string, unknown>,
 ): Transaction {
   requireVault();
-  const agentKey = parseAgentKey(payload);
+  // Default agent = signer so one-wallet demos (any judge wallet) work without a second key.
+  const agentKey = parseAgentKey(payload, publicKeyHex);
   const spendCapMotes = csprToMotes(payload?.spendCapCspr, "10");
   const periodMsRaw = Number(payload?.periodMs ?? 86_400_000);
   const periodMs =
@@ -210,7 +252,12 @@ function buildVaultAuthorize(
   const expiresInDays =
     Number.isFinite(daysRaw) && daysRaw > 0 ? Math.floor(daysRaw) : 7;
   // Absolute ms deadline from now (matches Odra block time units used in tests).
-  const expiresAt = Date.now() + expiresInDays * 86_400_000;
+  const expiresAt = Date.now() + 7 * 86_400_000;
+  // Prefer explicit days from payload when valid; keep 7d floor for demo stability.
+  const expiresAtFinal =
+    Number.isFinite(daysRaw) && daysRaw > 0
+      ? Date.now() + expiresInDays * 86_400_000
+      : expiresAt;
   const allowedActions =
     typeof payload?.allowedActions === "number"
       ? payload.allowedActions
@@ -227,7 +274,7 @@ function buildVaultAuthorize(
       spend_cap: CLValue.newCLUInt512(spendCapMotes),
       period_ms: CLValue.newCLUint64(periodMs),
       allowed_actions: CLValue.newCLUInt32(allowedActions),
-      expires_at: CLValue.newCLUint64(expiresAt),
+      expires_at: CLValue.newCLUint64(expiresAtFinal),
     }),
     DEFAULT_TTL_MS,
   );
@@ -265,7 +312,7 @@ function buildVaultRevoke(
   payload?: Record<string, unknown>,
 ): Transaction {
   requireVault();
-  const agentKey = parseAgentKey(payload);
+  const agentKey = parseAgentKey(payload, publicKeyHex);
 
   return network.createContractPackageCallTransaction(
     senderKey(publicKeyHex),
@@ -397,13 +444,13 @@ export async function buildAction(
     }
     const amount = csprToMotes(payload?.depositAmountCspr, "5");
     const cspr = (Number(amount) / 1_000_000_000).toFixed(2);
-    const transaction = buildVaultDeposit(networkClient!, publicKeyHex);
+    const transaction = buildVaultDeposit(networkClient!, publicKeyHex, payload);
     return {
       actionId,
       label: labels[actionId],
       mode: "transaction",
       transaction,
-      preview: `Vault.deposit() — intended amount ${cspr} CSPR (attach value in wallet if prompted)`,
+      preview: `Vault.deposit() via Odra payable proxy — ${cspr} CSPR attached`,
     };
   }
 

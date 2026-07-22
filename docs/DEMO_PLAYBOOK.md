@@ -80,17 +80,22 @@ Sample transactions: [`docs/TESTNET.md`](./TESTNET.md)
 
 ### 5. Session Vault (Agent Treasury) — Vault contract
 
-Recommended on-camera path when Vault is deployed: **authorize + revoke** (skip live deposit under time pressure).
+**How ownership works:** the wallet that **installs** the Vault package is the **owner**. Owner-only calls (`authorize_agent`, `revoke_agent`, `withdraw`) fail with User error: 1 (Not owner) for every other wallet. Connecting to the site alone does not make you owner.
+
+**Single-wallet path** (any tester with their own install, or the package owner):
 
 1. Open the **Session Vault** tab
-2. Confirm package is configured (not advisory-only)
-3. Enter an agent public key (second testnet account recommended)
-4. Set spend cap (e.g. 10 CSPR) and **Authorize agent**
-5. **Revoke agent** (panic button)
-6. Record transaction hashes
+2. If you are not the owner of the configured package: **Deploy / Install Vault** from this wallet (~500 CSPR payment), then sync / set the new package hash so the app targets *your* package
+3. Agent defaults to your connected public key (one-wallet demo — no second key)
+4. **Authorize agent** (owner grants spend cap to that key)
+5. **Deposit** positive CSPR (payable; vault must hold funds before spend)
+6. **Agent spend** (same wallet signs as agent — error 2 = not authorized / revoked; error 7 = empty vault)
+7. **Revoke agent** last
+8. Record transaction hashes
 
-**Pass:** `authorize_agent` and `revoke_agent` finalize.  
-**Entry points:** `authorize_agent`, `revoke_agent` (also `deposit`, `agent_transfer` when funding is intentional)
+**Pass:** `authorize_agent` succeeds; optionally `deposit` + `agent_transfer` then `revoke_agent`.  
+
+**Shared package hash in the repo** is for explorer verification and owner demos. Other wallets should install their own Vault for a full interactive path.
 
 ### 6. Agent reasoning
 
