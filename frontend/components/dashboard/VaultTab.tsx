@@ -297,8 +297,8 @@ export function VaultTab({
             key as the agent (no second wallet required).
           </li>
           <li>
-            <span className="text-[#ddd]">Deposit</span> before Agent spend (payable;
-            keep ~100 CSPR free for payment gas).
+            <span className="text-[#ddd]">Deposit</span> (owner/operator path — avoids
+            CSPR.click 413 on large session WASM). Then Agent spend.
           </li>
           <li>
             <span className="text-[#ddd]">Agent spend</span> — same wallet (error 7 =

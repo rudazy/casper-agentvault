@@ -5,7 +5,6 @@ import type { ActivityEntry } from "@/components/dashboard/types";
 import { queryAgent, toAgentInsight } from "@/lib/agents/client";
 import type { AgentInsight } from "@/lib/agents/types";
 import { requestActionBuild } from "@/lib/casper/actions-client";
-import { buildVaultDepositClient } from "@/lib/casper/build-vault-deposit-client";
 import type { ContractActionId } from "@/lib/casper/contract-action-types";
 import { humanizeOnChainError } from "@/lib/casper/on-chain-errors";
 import {
@@ -133,23 +132,99 @@ export function useContractActions() {
           agent: agentInsight,
         });
 
-        // Payable Vault.deposit embeds Odra proxy WASM; building server-side and
-        // returning JSON hits HTTP 413. Build that session tx in the browser instead.
+        // Payable Vault.deposit embeds Odra proxy WASM (~0.35MB JSON). CSPR.click
+        // rejects that sign payload (HTTP 413). Owner deposits go through a
+        // server route that signs with the package operator key (local pem / env).
+        if (actionId === "vault_deposit") {
+          setFeedback({
+            status: "signing",
+            actionLabel: ACTION_LABELS[actionId],
+            message:
+              agentInsight?.summary ??
+              "Submitting payable deposit (owner/operator path — no large wallet session)...",
+            agent: agentInsight,
+          });
+
+          const depositRes = await fetch("/api/casper/vault-deposit", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              publicKey,
+              amountCspr: payload?.depositAmountCspr ?? "2",
+            }),
+          });
+          const depositData = (await depositRes.json()) as {
+            error?: string;
+            transactionHash?: string;
+            preview?: string;
+            code?: string;
+          };
+
+          if (!depositRes.ok || !depositData.transactionHash) {
+            throw new Error(
+              depositData.error ??
+                "Vault deposit failed. Owner wallet + CASPER_VAULT_OPERATOR_PEM (or local secret_key.pem) required.",
+            );
+          }
+
+          const transactionHash = depositData.transactionHash;
+          setFeedback({
+            status: "signing",
+            actionLabel: ACTION_LABELS[actionId],
+            message: `Submitted ${shortenHash(transactionHash)}. Waiting for finalization...`,
+            transactionHash,
+            agent: agentInsight,
+          });
+
+          const confirmation = await waitForTransactionConfirmation(transactionHash);
+          if (confirmation.state === "failed") {
+            const fb: TxFeedback = {
+              status: "error",
+              actionLabel: ACTION_LABELS[actionId],
+              message: humanizeOnChainError(
+                confirmation.errorMessage ?? "Deposit failed on-chain.",
+              ),
+              transactionHash,
+              agent: agentInsight,
+            };
+            setFeedback(fb);
+            recordActivity(actionId, "error", fb.message, transactionHash);
+            return;
+          }
+          if (confirmation.state === "pending") {
+            const fb: TxFeedback = {
+              status: "error",
+              actionLabel: ACTION_LABELS[actionId],
+              message:
+                "Deposit submitted but did not finalize in time. Check testnet.cspr.live.",
+              transactionHash,
+              agent: agentInsight,
+            };
+            setFeedback(fb);
+            recordActivity(actionId, "error", fb.message, transactionHash);
+            return;
+          }
+
+          const fb: TxFeedback = {
+            status: "success",
+            actionLabel: ACTION_LABELS[actionId],
+            message: agentInsight
+              ? formatAgentMessage(agentInsight, "Confirmed on casper-test.")
+              : (depositData.preview ?? "Deposit confirmed on casper-test."),
+            transactionHash,
+            agent: agentInsight,
+          };
+          setFeedback(fb);
+          recordActivity(actionId, "success", fb.message, transactionHash);
+          return;
+        }
+
         let actionLabel = ACTION_LABELS[actionId];
         let txPreview =
           agentInsight?.preview ?? "Approve the transaction in your wallet.";
         let transactionJson: Record<string, unknown>;
 
-        if (actionId === "vault_deposit") {
-          const depositBuilt = await buildVaultDepositClient(publicKey, payload);
-          actionLabel = depositBuilt.label;
-          txPreview = agentInsight?.preview ?? depositBuilt.preview;
-          const raw = depositBuilt.transaction.toJSON();
-          transactionJson =
-            typeof raw === "string"
-              ? (JSON.parse(raw) as Record<string, unknown>)
-              : (raw as Record<string, unknown>);
-        } else {
+        {
           const built = await requestActionBuild(actionId, publicKey, payload);
 
           if (built.mode === "mock") {
